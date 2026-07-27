@@ -21,10 +21,11 @@ Golden Image Catalog는 사용자가 입력한 UUID를 실제 Harbor Image Diges
       "python": "3.11.9",
       "os": "ubuntu",
       "osVersion": "22.04",
+      "architecture": "amd64",
       "accelerator": "cpu"
     },
     "image": {
-      "repository": "harbor.local/platform/python-golden",
+      "repository": "harbor.local/platform/golden",
       "tag": "py311-cpu-ubuntu2204",
       "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
     }
@@ -36,14 +37,16 @@ Golden Image Catalog는 사용자가 입력한 UUID를 실제 Harbor Image Diges
       "python": "3.11.9",
       "os": "ubuntu",
       "osVersion": "22.04",
+      "architecture": "amd64",
       "accelerator": "cuda",
       "gpuModel": "b300",
       "gpuArchitecture": "blackwell",
       "cudaVersion": "12.8",
-      "minimumDriverVersion": "570.26"
+      "minimumDriverVersion": "570.26",
+      "nvidiaDriverCapabilities": "compute,utility"
     },
     "image": {
-      "repository": "harbor.local/platform/python-golden",
+      "repository": "harbor.local/platform/golden",
       "tag": "py311-cuda128-b300-ubuntu2204",
       "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
     }
@@ -56,7 +59,7 @@ Golden Image Catalog는 사용자가 입력한 UUID를 실제 Harbor Image Diges
 사용자 Workflow는 UUID 조회 후 다음 값을 사용합니다.
 
 ```text
-harbor.local/platform/python-golden@sha256:<digest>
+harbor.local/platform/golden@sha256:<digest>
 ```
 
 태그는 사람이 식별하기 위한 보조 정보이며, 실제 빌드 기준은 Digest입니다.

@@ -1,0 +1,465 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: golden-image-build-6-layer
+  namespace: argo
+  labels:
+    workflows.argoproj.io/creator: system-serviceaccount-argo-argo-server
+    app.kubernetes.io/name: admin
+    app.kubernetes.io/part-of: image-build-standard
+    image-build.openai/type: golden
+spec:
+  entrypoint: main
+  serviceAccountName: argo-kserver
+  parallelism: 4
+  arguments:
+    parameters:
+      - name: image-type
+        value: golden
+      - name: golden-image-uuid
+        value: py311-cuda128-b300-ubuntu2204-20260727
+      - name: base-image
+        value: harbor.CHANGE_ME.internal/nvidia/cuda:12.8.0-cudnn-devel-ubuntu22.04@sha256:CHANGE_ME_64_HEX_DIGEST
+      - name: python-version
+        value: "3.11.9"
+      - name: os-family
+        value: ubuntu
+      - name: os-version
+        value: "22.04"
+      - name: architecture
+        value: amd64
+      - name: accelerator
+        value: cuda
+      - name: gpu-model
+        value: b300
+      - name: gpu-architecture
+        value: blackwell
+      - name: cuda-version
+        value: "12.8"
+      - name: cudnn-version
+        value: CHANGE_ME
+      - name: nccl-version
+        value: CHANGE_ME
+      - name: minimum-driver-version
+        value: "570.26"
+      - name: nvidia-driver-capabilities
+        value: compute,utility
+      - name: apt-mirror-url
+        value: https://apt.CHANGE_ME.internal/ubuntu
+      - name: common-os-packages
+        value: ca-certificates bash curl git python3 python3-pip python3-venv
+      - name: nexus-pypi-url
+        value: https://nexus.CHANGE_ME.internal/repository/pypi-group/simple
+      - name: registry-address
+        value: harbor.CHANGE_ME.internal
+      - name: registry-project
+        value: platform
+      - name: cache-registry-address
+        value: harbor.CHANGE_ME.internal/build-cache
+      - name: buildkit-address
+        value: tcp://buildkitd.buildkit.svc.cluster.local:1234
+      - name: image-name
+        value: golden
+      - name: image-tag
+        value: py311-cuda128-b300-ubuntu2204
+      - name: working-directory
+        value: /app
+      - name: run-as-user
+        value: "10001"
+      - name: environment-profile
+        value: golden
+
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes:
+          - ReadWriteMany
+        storageClassName: CHANGE_ME-rwx-storage
+        resources:
+          requests:
+            storage: 10Gi
+
+  volumes:
+    - name: registry-auth
+      secret:
+        secretName: harbor-registry-auth
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+    - name: admin-scripts
+      configMap:
+        name: admin-scripts
+        defaultMode: 0555
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: step-1-validate-golden-input
+            template: validate-golden-input
+            arguments:
+              parameters:
+                - name: image-type
+                  value: "{{workflow.parameters.image-type}}"
+                - name: golden-image-uuid
+                  value: "{{workflow.parameters.golden-image-uuid}}"
+                - name: base-image
+                  value: "{{workflow.parameters.base-image}}"
+                - name: python-version
+                  value: "{{workflow.parameters.python-version}}"
+                - name: os-family
+                  value: "{{workflow.parameters.os-family}}"
+                - name: os-version
+                  value: "{{workflow.parameters.os-version}}"
+                - name: architecture
+                  value: "{{workflow.parameters.architecture}}"
+                - name: accelerator
+                  value: "{{workflow.parameters.accelerator}}"
+                - name: gpu-model
+                  value: "{{workflow.parameters.gpu-model}}"
+                - name: gpu-architecture
+                  value: "{{workflow.parameters.gpu-architecture}}"
+                - name: cuda-version
+                  value: "{{workflow.parameters.cuda-version}}"
+                - name: minimum-driver-version
+                  value: "{{workflow.parameters.minimum-driver-version}}"
+                - name: image-name
+                  value: "{{workflow.parameters.image-name}}"
+                - name: image-tag
+                  value: "{{workflow.parameters.image-tag}}"
+                - name: common-os-packages
+                  value: "{{workflow.parameters.common-os-packages}}"
+                - name: run-as-user
+                  value: "{{workflow.parameters.run-as-user}}"
+                - name: environment-profile
+                  value: "{{workflow.parameters.environment-profile}}"
+
+          - name: step-2-create-golden-6-layer-dockerfile
+            depends: step-1-validate-golden-input.Succeeded
+            template: create-golden-6-layer-dockerfile
+            arguments:
+              parameters:
+                - name: image-type
+                  value: "{{workflow.parameters.image-type}}"
+                - name: golden-image-uuid
+                  value: "{{workflow.parameters.golden-image-uuid}}"
+                - name: base-image
+                  value: "{{workflow.parameters.base-image}}"
+                - name: python-version
+                  value: "{{workflow.parameters.python-version}}"
+                - name: os-family
+                  value: "{{workflow.parameters.os-family}}"
+                - name: os-version
+                  value: "{{workflow.parameters.os-version}}"
+                - name: architecture
+                  value: "{{workflow.parameters.architecture}}"
+                - name: accelerator
+                  value: "{{workflow.parameters.accelerator}}"
+                - name: gpu-model
+                  value: "{{workflow.parameters.gpu-model}}"
+                - name: gpu-architecture
+                  value: "{{workflow.parameters.gpu-architecture}}"
+                - name: cuda-version
+                  value: "{{workflow.parameters.cuda-version}}"
+                - name: cudnn-version
+                  value: "{{workflow.parameters.cudnn-version}}"
+                - name: nccl-version
+                  value: "{{workflow.parameters.nccl-version}}"
+                - name: minimum-driver-version
+                  value: "{{workflow.parameters.minimum-driver-version}}"
+                - name: nvidia-driver-capabilities
+                  value: "{{workflow.parameters.nvidia-driver-capabilities}}"
+                - name: apt-mirror-url
+                  value: "{{workflow.parameters.apt-mirror-url}}"
+                - name: common-os-packages
+                  value: "{{workflow.parameters.common-os-packages}}"
+                - name: nexus-pypi-url
+                  value: "{{workflow.parameters.nexus-pypi-url}}"
+                - name: working-directory
+                  value: "{{workflow.parameters.working-directory}}"
+                - name: run-as-user
+                  value: "{{workflow.parameters.run-as-user}}"
+                - name: environment-profile
+                  value: "{{workflow.parameters.environment-profile}}"
+
+          - name: step-3-build-and-push-golden-image
+            depends: step-2-create-golden-6-layer-dockerfile.Succeeded
+            template: build-and-push-golden-image
+            arguments:
+              parameters:
+                - name: repository-name
+                  value: "{{tasks.step-1-validate-golden-input.outputs.parameters.repository-name}}"
+                - name: image-name
+                  value: "{{workflow.parameters.image-name}}"
+                - name: buildkit-address
+                  value: "{{workflow.parameters.buildkit-address}}"
+                - name: registry-address
+                  value: "{{workflow.parameters.registry-address}}"
+                - name: registry-project
+                  value: "{{workflow.parameters.registry-project}}"
+                - name: cache-registry-address
+                  value: "{{workflow.parameters.cache-registry-address}}"
+                - name: image-tag
+                  value: "{{workflow.parameters.image-tag}}"
+                - name: apt-mirror-url
+                  value: "{{workflow.parameters.apt-mirror-url}}"
+
+          - name: step-4-write-golden-result
+            depends: step-3-build-and-push-golden-image.Succeeded
+            template: write-golden-result
+            arguments:
+              parameters:
+                - name: image-type
+                  value: "{{workflow.parameters.image-type}}"
+                - name: golden-image-uuid
+                  value: "{{workflow.parameters.golden-image-uuid}}"
+                - name: base-image
+                  value: "{{workflow.parameters.base-image}}"
+                - name: python-version
+                  value: "{{workflow.parameters.python-version}}"
+                - name: os-family
+                  value: "{{workflow.parameters.os-family}}"
+                - name: os-version
+                  value: "{{workflow.parameters.os-version}}"
+                - name: architecture
+                  value: "{{workflow.parameters.architecture}}"
+                - name: accelerator
+                  value: "{{workflow.parameters.accelerator}}"
+                - name: gpu-model
+                  value: "{{workflow.parameters.gpu-model}}"
+                - name: gpu-architecture
+                  value: "{{workflow.parameters.gpu-architecture}}"
+                - name: cuda-version
+                  value: "{{workflow.parameters.cuda-version}}"
+                - name: cudnn-version
+                  value: "{{workflow.parameters.cudnn-version}}"
+                - name: nccl-version
+                  value: "{{workflow.parameters.nccl-version}}"
+                - name: minimum-driver-version
+                  value: "{{workflow.parameters.minimum-driver-version}}"
+                - name: image-reference
+                  value: "{{tasks.step-3-build-and-push-golden-image.outputs.parameters.image-reference}}"
+                - name: image-digest
+                  value: "{{tasks.step-3-build-and-push-golden-image.outputs.parameters.image-digest}}"
+
+    - name: validate-golden-input
+      inputs:
+        parameters:
+          - name: image-type
+          - name: golden-image-uuid
+          - name: base-image
+          - name: python-version
+          - name: os-family
+          - name: os-version
+          - name: architecture
+          - name: accelerator
+          - name: gpu-model
+          - name: gpu-architecture
+          - name: cuda-version
+          - name: minimum-driver-version
+          - name: image-name
+          - name: image-tag
+          - name: common-os-packages
+          - name: run-as-user
+          - name: environment-profile
+      outputs:
+        parameters:
+          - name: repository-name
+            valueFrom:
+              path: /tmp/repository-name.txt
+      script:
+        image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
+        command: [sh]
+        source: |
+          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
+          export GOLDEN_IMAGE_UUID="{{inputs.parameters.golden-image-uuid}}"
+          export BASE_IMAGE="{{inputs.parameters.base-image}}"
+          export PYTHON_VERSION="{{inputs.parameters.python-version}}"
+          export OS_FAMILY="{{inputs.parameters.os-family}}"
+          export OS_VERSION="{{inputs.parameters.os-version}}"
+          export ARCHITECTURE="{{inputs.parameters.architecture}}"
+          export ACCELERATOR="{{inputs.parameters.accelerator}}"
+          export GPU_MODEL="{{inputs.parameters.gpu-model}}"
+          export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
+          export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
+          export MINIMUM_DRIVER_VERSION="{{inputs.parameters.minimum-driver-version}}"
+          export IMAGE_NAME="{{inputs.parameters.image-name}}"
+          export IMAGE_TAG="{{inputs.parameters.image-tag}}"
+          export COMMON_OS_PACKAGES="{{inputs.parameters.common-os-packages}}"
+          export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
+          export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
+          python /opt/admin/scripts/validate_golden_input.py
+        volumeMounts:
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
+            readOnly: true
+
+    - name: create-golden-6-layer-dockerfile
+      inputs:
+        parameters:
+          - name: image-type
+          - name: golden-image-uuid
+          - name: base-image
+          - name: python-version
+          - name: os-family
+          - name: os-version
+          - name: architecture
+          - name: accelerator
+          - name: gpu-model
+          - name: gpu-architecture
+          - name: cuda-version
+          - name: cudnn-version
+          - name: nccl-version
+          - name: minimum-driver-version
+          - name: nvidia-driver-capabilities
+          - name: apt-mirror-url
+          - name: common-os-packages
+          - name: nexus-pypi-url
+          - name: working-directory
+          - name: run-as-user
+          - name: environment-profile
+      outputs:
+        parameters:
+          - name: parent-image-digest
+            valueFrom:
+              path: /tmp/parent-image-digest.txt
+      script:
+        image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
+        command: [sh]
+        source: |
+          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
+          export GOLDEN_IMAGE_UUID="{{inputs.parameters.golden-image-uuid}}"
+          export BASE_IMAGE="{{inputs.parameters.base-image}}"
+          export PYTHON_VERSION="{{inputs.parameters.python-version}}"
+          export OS_FAMILY="{{inputs.parameters.os-family}}"
+          export OS_VERSION="{{inputs.parameters.os-version}}"
+          export ARCHITECTURE="{{inputs.parameters.architecture}}"
+          export ACCELERATOR="{{inputs.parameters.accelerator}}"
+          export GPU_MODEL="{{inputs.parameters.gpu-model}}"
+          export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
+          export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
+          export CUDNN_VERSION="{{inputs.parameters.cudnn-version}}"
+          export NCCL_VERSION="{{inputs.parameters.nccl-version}}"
+          export MINIMUM_DRIVER_VERSION="{{inputs.parameters.minimum-driver-version}}"
+          export NVIDIA_DRIVER_CAPABILITIES="{{inputs.parameters.nvidia-driver-capabilities}}"
+          export APT_MIRROR_URL="{{inputs.parameters.apt-mirror-url}}"
+          export COMMON_OS_PACKAGES="{{inputs.parameters.common-os-packages}}"
+          export NEXUS_PYPI_URL="{{inputs.parameters.nexus-pypi-url}}"
+          export WORKING_DIRECTORY="{{inputs.parameters.working-directory}}"
+          export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
+          export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
+          export WORKSPACE_DIR=/workspace
+          sh /opt/admin/scripts/create_golden_6_layer_dockerfile.sh
+        volumeMounts:
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
+            readOnly: true
+          - name: workspace
+            mountPath: /workspace
+
+    - name: build-and-push-golden-image
+      inputs:
+        parameters:
+          - name: repository-name
+          - name: image-name
+          - name: buildkit-address
+          - name: registry-address
+          - name: registry-project
+          - name: cache-registry-address
+          - name: image-tag
+          - name: apt-mirror-url
+      outputs:
+        parameters:
+          - name: image-reference
+            valueFrom:
+              path: /tmp/image-reference.txt
+          - name: image-digest
+            valueFrom:
+              path: /tmp/image-digest.txt
+      script:
+        image: harbor.CHANGE_ME.internal/platform/buildkit-client-tools:1.0.0@sha256:CHANGE_ME
+        command: [sh]
+        source: |
+          export REPOSITORY_NAME="{{inputs.parameters.repository-name}}"
+          export IMAGE_NAME="{{inputs.parameters.image-name}}"
+          export BUILDKIT_ADDRESS="{{inputs.parameters.buildkit-address}}"
+          export REGISTRY_ADDRESS="{{inputs.parameters.registry-address}}"
+          export REGISTRY_PROJECT="{{inputs.parameters.registry-project}}"
+          export CACHE_REGISTRY_ADDRESS="{{inputs.parameters.cache-registry-address}}"
+          export IMAGE_TAG="{{inputs.parameters.image-tag}}"
+          export APT_MIRROR_URL="{{inputs.parameters.apt-mirror-url}}"
+          export NEXUS_PYPI_URL="{{workflow.parameters.nexus-pypi-url}}"
+          export WORKSPACE_DIR=/workspace
+          sh /opt/admin/scripts/build_and_push_image.sh
+        volumeMounts:
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
+            readOnly: true
+          - name: workspace
+            mountPath: /workspace
+          - name: registry-auth
+            mountPath: /root/.docker
+            readOnly: true
+      retryStrategy:
+        limit: "2"
+        retryPolicy: OnError
+        backoff:
+          duration: 10s
+          factor: 2
+          maxDuration: 2m
+
+    - name: write-golden-result
+      inputs:
+        parameters:
+          - name: image-type
+          - name: golden-image-uuid
+          - name: base-image
+          - name: python-version
+          - name: os-family
+          - name: os-version
+          - name: architecture
+          - name: accelerator
+          - name: gpu-model
+          - name: gpu-architecture
+          - name: cuda-version
+          - name: cudnn-version
+          - name: nccl-version
+          - name: minimum-driver-version
+          - name: image-reference
+          - name: image-digest
+      outputs:
+        artifacts:
+          - name: golden-build-report
+            path: /workspace/output/golden-build-report.json
+      script:
+        image: alpine:3.22
+        command: [sh]
+        source: |
+          export WORKFLOW_NAME="{{workflow.name}}"
+          export WORKFLOW_UID="{{workflow.uid}}"
+          export WORKFLOW_NAMESPACE="{{workflow.namespace}}"
+          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
+          export GOLDEN_IMAGE_UUID="{{inputs.parameters.golden-image-uuid}}"
+          export BASE_IMAGE="{{inputs.parameters.base-image}}"
+          export PYTHON_VERSION="{{inputs.parameters.python-version}}"
+          export OS_FAMILY="{{inputs.parameters.os-family}}"
+          export OS_VERSION="{{inputs.parameters.os-version}}"
+          export ARCHITECTURE="{{inputs.parameters.architecture}}"
+          export ACCELERATOR="{{inputs.parameters.accelerator}}"
+          export GPU_MODEL="{{inputs.parameters.gpu-model}}"
+          export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
+          export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
+          export CUDNN_VERSION="{{inputs.parameters.cudnn-version}}"
+          export NCCL_VERSION="{{inputs.parameters.nccl-version}}"
+          export MINIMUM_DRIVER_VERSION="{{inputs.parameters.minimum-driver-version}}"
+          export IMAGE_REFERENCE="{{inputs.parameters.image-reference}}"
+          export IMAGE_DIGEST="{{inputs.parameters.image-digest}}"
+          export WORKSPACE_DIR=/workspace
+          sh /opt/admin/scripts/write_golden_result.sh
+        volumeMounts:
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
+            readOnly: true
+          - name: workspace
+            mountPath: /workspace

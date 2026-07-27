@@ -1,13 +1,15 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: python-image-build-cpu-
+  generateName: image-build-cpu-
   namespace: argo
 spec:
   workflowTemplateRef:
-    name: python-image-build-6-layer
+    name: user-image-build-6-layer
   arguments:
     parameters:
+      - name: image-type
+        value: user
       - name: bitbucket-address-user-code
         value: ssh://git@bitbucket.CHANGE_ME/project/sample-app.git
       - name: git-revision
@@ -18,20 +20,6 @@ spec:
         value: requirements.lock
       - name: golden-image-uuid
         value: py311-cpu-ubuntu2204-20260727
-      - name: runtime-image
-        value: harbor.local/platform/python-golden@sha256:1111111111111111111111111111111111111111111111111111111111111111
-      - name: accelerator
-        value: cpu
-      - name: gpu-model
-        value: ""
-      - name: gpu-architecture
-        value: ""
-      - name: cuda-version
-        value: ""
-      - name: minimum-driver-version
-        value: ""
-      - name: nvidia-driver-capabilities
-        value: ""
       - name: nexus-pypi-url
         value: https://nexus.CHANGE_ME.internal/repository/pypi-group/simple
       - name: registry-address

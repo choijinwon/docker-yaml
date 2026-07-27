@@ -4,7 +4,7 @@
 
 ## 한 줄 요약
 
-CPU와 여러 GPU 타입을 Golden Image Catalog로 관리하고, 하나의 Argo Workflow로 Python Application Image를 재현 가능하게 빌드하는 구조입니다.
+이미지 빌드를 `golden`과 `user` 두 타입으로 나누고, Golden Image Catalog를 통해 Python Application Image를 재현 가능하게 빌드하는 구조입니다.
 
 ## 왜 필요한가
 
@@ -28,8 +28,11 @@ Golden Image Catalog
 ## 핵심 구조
 
 ```text
-workflows/python-image-build-6-layer.yaml
-- 실제 Argo WorkflowTemplate
+workflows/golden-image-build-6-layer.yaml
+- 운영자가 CPU/GPU Golden Image를 생성하는 WorkflowTemplate
+
+workflows/user-image-build-6-layer.yaml
+- 사용자가 Application Image를 생성하는 WorkflowTemplate
 
 manifests/golden-image-catalog.configmap.yaml
 - CPU/GPU Golden Image UUID와 Digest 매핑
@@ -39,7 +42,7 @@ manifests/run-b300.workflow.yaml
 - 사용자가 제출할 실행 예시
 
 scripts/admin/
-- Workflow Pod 안에서 실행되는 내부 빌드 스크립트
+- Golden/User Workflow Pod 안에서 실행되는 관리자 빌드 스크립트
 
 scripts/user/
 - 사용자가 환경변수만 넣고 Workflow를 제출하는 편의 스크립트
@@ -47,7 +50,11 @@ scripts/user/
 
 ## CPU와 GPU 처리 방식
 
-Workflow는 CPU용, GPU용으로 나뉘지 않습니다. 하나의 Workflow를 사용하고, Golden Image UUID만 다르게 선택합니다.
+Workflow는 이미지 타입 기준으로 `golden`, `user` 두 개로 나뉩니다.
+
+`golden` Workflow는 운영자가 CPU/GPU 기준 이미지를 만들 때 사용합니다.
+
+`user` Workflow는 사용자가 승인된 Golden Image UUID를 선택해 애플리케이션 이미지를 만들 때 사용합니다.
 
 CPU 예시:
 
@@ -67,7 +74,7 @@ cuda-version           = 12.8
 minimum-driver-version = 570.26
 ```
 
-다른 GPU가 추가되면 Workflow를 새로 만들지 않습니다. Catalog에 GPU별 Golden Image Record를 추가하고 실행 manifest 또는 사용자 스크립트의 GPU 값을 바꾸면 됩니다.
+다른 GPU가 추가되면 User Workflow를 새로 만들지 않습니다. Golden Workflow로 GPU별 기준 이미지를 만들고 Catalog에 Golden Image Record를 추가한 뒤, 실행 manifest 또는 사용자 스크립트의 GPU 값을 바꾸면 됩니다.
 
 ## 파라미터를 추가한 이유
 
@@ -115,6 +122,30 @@ B300은 일반 Ubuntu 이미지만으로는 운영 기준을 만족하기 어렵
 
 ## 6단계 Docker Layer
 
+Golden Image와 User Image는 둘 다 6레이어로 관리합니다.
+
+둘 다 운영에서 재현성과 추적성이 필요하기 때문입니다. 다만 목적은 다릅니다.
+
+```text
+Golden Image 6레이어
+- 운영자가 CPU/GPU 기준 런타임을 만드는 구조
+- OS, CUDA, Python, 공통 도구, 보안 정책, 기본 실행 사용자 기준을 고정
+
+User Image 6레이어
+- 사용자가 실제 애플리케이션 이미지를 만드는 구조
+- 승인된 Golden Image 위에 requirements.lock, 패키지, 소스, Entrypoint를 고정
+```
+
+현업 설명용으로는 이렇게 말하면 됩니다.
+
+```text
+Golden Image는 운영 표준 런타임을 6레이어로 만들고,
+User Image는 그 표준 런타임 위에 애플리케이션을 6레이어로 올립니다.
+그래서 둘 다 6레이어지만 관리 목적이 다릅니다.
+```
+
+User Image 6레이어:
+
 ```text
 1. Golden Image Layer
    승인된 CPU/GPU Golden Image Digest 사용
@@ -137,6 +168,28 @@ B300은 일반 Ubuntu 이미지만으로는 운영 기준을 만족하기 어렵
 
 이 순서로 나눈 이유는 `requirements.lock`이 바뀌지 않으면 패키지 설치 레이어 캐시를 재사용하기 위해서입니다.
 
+Golden Image 6레이어:
+
+```text
+1. Base Image Layer
+   Ubuntu 또는 NVIDIA CUDA Base Image Digest 사용
+
+2. OS / CA Policy Layer
+   사내 APT Mirror, CA, 공통 OS 패키지 적용
+
+3. Runtime Tooling Layer
+   Python, pip, setuptools, wheel 등 기본 도구 준비
+
+4. Runtime Metadata Layer
+   CPU/GPU, CUDA, Driver, GPU 모델 기준 기록
+
+5. Runtime User Layer
+   작업 디렉토리와 non-root UID 기준 적용
+
+6. Golden Image Contract Layer
+   Label, 기본 CMD, Catalog 등록용 계약 정보 적용
+```
+
 ## 운영자 역할
 
 운영자는 다음을 준비합니다.
@@ -145,8 +198,9 @@ B300은 일반 Ubuntu 이미지만으로는 운영 기준을 만족하기 어렵
 1. CPU/GPU Golden Image 생성
 2. Harbor에 repository@digest 형태로 Push
 3. golden-image-catalog.configmap.yaml에 UUID와 Digest 등록
-4. python-admin-scripts ConfigMap 배포
-5. python-image-build-6-layer WorkflowTemplate 등록
+4. admin-scripts ConfigMap 배포
+5. golden-image-build-6-layer WorkflowTemplate 등록
+6. user-image-build-6-layer WorkflowTemplate 등록
 ```
 
 ## 사용자 역할
@@ -161,6 +215,8 @@ requirements.lock 경로
 Image Name / Tag
 Shell / Entrypoint
 ```
+
+사용자는 `runtime-image`, `accelerator`, `gpu-model`, `cuda-version`, `minimum-driver-version`을 직접 입력하지 않습니다. 이 값들은 Golden Image Catalog에서 자동으로 조회됩니다.
 
 CPU 실행:
 
@@ -199,5 +255,5 @@ scripts/user/submit_cpu_build.sh
 ```text
 이 구조는 CPU와 GPU별 실행 환경을 Golden Image Catalog로 표준화하고,
 사용자는 UUID와 소스/requirements.lock/Entrypoint만 입력해서
-하나의 Argo Workflow로 재현 가능한 Python Application Image를 빌드하는 방식입니다.
+Golden/User 두 개의 Argo Workflow로 재현 가능한 Python Image Build를 관리하는 방식입니다.
 ```

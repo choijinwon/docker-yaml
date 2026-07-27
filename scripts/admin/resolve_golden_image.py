@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 # Resolve the approved Golden Image into a concrete repository@sha256 digest.
-# If GOLDEN_IMAGE_UUID is provided, the catalog wins. Otherwise RUNTIME_IMAGE is used.
+# User image builds must select a deployed Golden Image from the Catalog by UUID.
 
 
 def fail(message: str) -> None:
@@ -21,25 +21,26 @@ def env(name: str) -> str:
 
 
 golden_uuid = env("GOLDEN_IMAGE_UUID")
-runtime_image = env("RUNTIME_IMAGE")
 catalog_path = Path(env("CATALOG_PATH") or "/catalog/golden-image-catalog.json")
 
-# Preferred path: users select a Golden Image UUID, not a raw base image.
-if golden_uuid:
-    if not catalog_path.exists():
-        fail("Golden Image Catalog ConfigMap is not mounted")
+if not golden_uuid:
+    fail("golden-image-uuid is required for user image builds")
 
-    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
-    matches = [item for item in catalog if item.get("uuid") == golden_uuid]
-    if not matches:
-        fail(f"Golden Image UUID not found: {golden_uuid}")
+if not catalog_path.exists():
+    fail("Golden Image Catalog ConfigMap is not mounted")
 
-    record = matches[0]
-    if record.get("status") != "active":
-        fail(f"Golden Image is not active: {golden_uuid}")
+catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+matches = [item for item in catalog if item.get("uuid") == golden_uuid]
+if not matches:
+    fail(f"Golden Image UUID not found: {golden_uuid}")
 
-    image = record["image"]
-    runtime_image = f'{image["repository"]}@{image["digest"]}'
+record = matches[0]
+if record.get("status") != "active":
+    fail(f"Golden Image is not active: {golden_uuid}")
+
+image = record["image"]
+runtime = record.get("runtime", {})
+runtime_image = f'{image["repository"]}@{image["digest"]}'
 
 # The final base image must be immutable. Tags alone are not accepted.
 if not re.fullmatch(r".+@sha256:[0-9a-f]{64}", runtime_image):
@@ -50,4 +51,15 @@ parent_digest = runtime_image.rsplit("@", 1)[1]
 # Argo exposes these files as output parameters for downstream tasks and reports.
 Path("/tmp/runtime-image.txt").write_text(runtime_image, encoding="utf-8")
 Path("/tmp/parent-image-digest.txt").write_text(parent_digest, encoding="utf-8")
+Path("/tmp/architecture.txt").write_text(runtime.get("architecture", ""), encoding="utf-8")
+Path("/tmp/accelerator.txt").write_text(runtime.get("accelerator", ""), encoding="utf-8")
+Path("/tmp/gpu-model.txt").write_text(runtime.get("gpuModel", ""), encoding="utf-8")
+Path("/tmp/gpu-architecture.txt").write_text(runtime.get("gpuArchitecture", ""), encoding="utf-8")
+Path("/tmp/cuda-version.txt").write_text(runtime.get("cudaVersion", ""), encoding="utf-8")
+Path("/tmp/minimum-driver-version.txt").write_text(runtime.get("minimumDriverVersion", ""), encoding="utf-8")
+Path("/tmp/nvidia-driver-capabilities.txt").write_text(
+    runtime.get("nvidiaDriverCapabilities")
+    or ("compute,utility" if runtime.get("accelerator") == "cuda" else ""),
+    encoding="utf-8",
+)
 print(f"runtime-image={runtime_image}")

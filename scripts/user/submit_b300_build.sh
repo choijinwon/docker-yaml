@@ -13,13 +13,6 @@ GIT_REVISION="${GIT_REVISION:-main}"
 CONTEXT_PATH="${CONTEXT_PATH:-.}"
 REQUIREMENTS_LOCK_PATH="${REQUIREMENTS_LOCK_PATH:-requirements.lock}"
 GOLDEN_IMAGE_UUID="${GOLDEN_IMAGE_UUID:-py311-cuda128-b300-ubuntu2204-20260727}"
-RUNTIME_IMAGE="${RUNTIME_IMAGE:-harbor.local/platform/python-golden@sha256:0000000000000000000000000000000000000000000000000000000000000000}"
-ACCELERATOR="${ACCELERATOR:-cuda}"
-GPU_MODEL="${GPU_MODEL:-b300}"
-GPU_ARCHITECTURE="${GPU_ARCHITECTURE:-blackwell}"
-CUDA_VERSION="${CUDA_VERSION:-12.8}"
-MINIMUM_DRIVER_VERSION="${MINIMUM_DRIVER_VERSION:-570.26}"
-NVIDIA_DRIVER_CAPABILITIES="${NVIDIA_DRIVER_CAPABILITIES:-compute,utility}"
 NEXUS_PYPI_URL="${NEXUS_PYPI_URL:-https://nexus.CHANGE_ME.internal/repository/pypi-group/simple}"
 REGISTRY_ADDRESS="${REGISTRY_ADDRESS:-harbor.CHANGE_ME.internal}"
 REGISTRY_PROJECT="${REGISTRY_PROJECT:-applications}"
@@ -42,13 +35,15 @@ cat > "${tmp_file}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: python-image-build-${GPU_MODEL}-
+  generateName: image-build-b300-
   namespace: ${NAMESPACE}
 spec:
   workflowTemplateRef:
-    name: python-image-build-6-layer
+    name: user-image-build-6-layer
   arguments:
     parameters:
+      - name: image-type
+        value: user
       - name: bitbucket-address-user-code
         value: ${GIT_URL}
       - name: git-revision
@@ -59,20 +54,6 @@ spec:
         value: ${REQUIREMENTS_LOCK_PATH}
       - name: golden-image-uuid
         value: ${GOLDEN_IMAGE_UUID}
-      - name: runtime-image
-        value: ${RUNTIME_IMAGE}
-      - name: accelerator
-        value: ${ACCELERATOR}
-      - name: gpu-model
-        value: ${GPU_MODEL}
-      - name: gpu-architecture
-        value: ${GPU_ARCHITECTURE}
-      - name: cuda-version
-        value: "${CUDA_VERSION}"
-      - name: minimum-driver-version
-        value: "${MINIMUM_DRIVER_VERSION}"
-      - name: nvidia-driver-capabilities
-        value: ${NVIDIA_DRIVER_CAPABILITIES}
       - name: nexus-pypi-url
         value: ${NEXUS_PYPI_URL}
       - name: registry-address

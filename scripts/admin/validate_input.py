@@ -21,15 +21,11 @@ def env(name: str) -> str:
 
 
 repository_url = env("REPOSITORY_URL")
+image_type = env("IMAGE_TYPE") or "user"
 git_revision = env("GIT_REVISION")
 context_path = env("CONTEXT_PATH")
 requirements_lock_path = env("REQUIREMENTS_LOCK_PATH")
 image_name = env("IMAGE_NAME")
-accelerator = env("ACCELERATOR")
-gpu_model = env("GPU_MODEL")
-gpu_architecture = env("GPU_ARCHITECTURE")
-cuda_version = env("CUDA_VERSION")
-minimum_driver_version = env("MINIMUM_DRIVER_VERSION")
 shell_type = env("SHELL_TYPE")
 entrypoint_type = env("ENTRYPOINT_TYPE")
 entrypoint_value = env("ENTRYPOINT_VALUE")
@@ -38,6 +34,9 @@ run_as_user = env("RUN_AS_USER")
 environment_profile = env("ENVIRONMENT_PROFILE")
 
 # Required source input. Without this, the workflow has nothing to clone.
+if image_type != "user":
+    fail("user image workflow requires image-type=user")
+
 if not repository_url:
     fail("Repository URL is empty")
 
@@ -56,27 +55,6 @@ if not requirements_lock_path or requirements_lock_path.startswith("/") or ".." 
 # image_name is optional. When empty, the repository name becomes the image name.
 if image_name and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,127}", image_name):
     fail(f"Invalid image-name: {image_name}")
-
-# GPU workloads must use CUDA Golden Images. CPU workloads can skip GPU fields.
-# B300 has an extra Blackwell/CUDA floor because it is a newer GPU architecture.
-if accelerator not in {"cpu", "cuda"}:
-    fail("accelerator must be cpu or cuda")
-
-if accelerator == "cuda":
-    if not gpu_model:
-        fail("gpu-model is required when accelerator is cuda")
-    if not gpu_architecture:
-        fail("gpu-architecture is required when accelerator is cuda")
-    if not cuda_version:
-        fail("cuda-version is required when accelerator is cuda")
-    if not minimum_driver_version:
-        fail("minimum-driver-version is required when accelerator is cuda")
-
-if gpu_model.lower() == "b300":
-    if gpu_architecture.lower() != "blackwell":
-        fail("B300 must use gpu-architecture=blackwell")
-    if not re.fullmatch(r"(12\.(8|9)|13(\.[0-9]+)?)", cuda_version):
-        fail("B300 requires CUDA 12.8 or newer")
 
 # Only support shells that are expected to exist in the approved Golden Image.
 if shell_type not in {"bash", "sh"}:

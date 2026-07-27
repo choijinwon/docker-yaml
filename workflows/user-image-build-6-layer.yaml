@@ -1,18 +1,21 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: python-image-build-6-layer
+  name: user-image-build-6-layer
   namespace: argo
   labels:
     workflows.argoproj.io/creator: system-serviceaccount-argo-argo-server
-    app.kubernetes.io/name: python-admin
+    app.kubernetes.io/name: admin
     app.kubernetes.io/part-of: image-build-standard
+    image-build.openai/type: user
 spec:
   entrypoint: main
   serviceAccountName: argo-kserver
   parallelism: 6
   arguments:
     parameters:
+      - name: image-type
+        value: user
       - name: bitbucket-address-user-code
         value: ssh://git@bitbucket.CHANGE_ME/project/sample-app.git
       - name: git-revision
@@ -23,20 +26,6 @@ spec:
         value: requirements.lock
       - name: golden-image-uuid
         value: ""
-      - name: runtime-image
-        value: harbor.CHANGE_ME.internal/runtime/python311-cuda128-b300@sha256:CHANGE_ME_64_HEX_DIGEST
-      - name: accelerator
-        value: cuda
-      - name: gpu-model
-        value: b300
-      - name: gpu-architecture
-        value: blackwell
-      - name: cuda-version
-        value: "12.8"
-      - name: minimum-driver-version
-        value: "570.26"
-      - name: nvidia-driver-capabilities
-        value: compute,utility
       - name: nexus-pypi-url
         value: https://nexus.CHANGE_ME.internal/repository/pypi-group/simple
       - name: registry-address
@@ -91,10 +80,9 @@ spec:
     - name: golden-image-catalog
       configMap:
         name: golden-image-catalog
-        optional: true
     - name: admin-scripts
       configMap:
-        name: python-admin-scripts
+        name: admin-scripts
         defaultMode: 0555
 
   templates:
@@ -105,6 +93,8 @@ spec:
             template: validate-input
             arguments:
               parameters:
+                - name: image-type
+                  value: "{{workflow.parameters.image-type}}"
                 - name: repository-url
                   value: "{{workflow.parameters.bitbucket-address-user-code}}"
                 - name: git-revision
@@ -115,16 +105,6 @@ spec:
                   value: "{{workflow.parameters.requirements-lock-path}}"
                 - name: image-name
                   value: "{{workflow.parameters.image-name}}"
-                - name: accelerator
-                  value: "{{workflow.parameters.accelerator}}"
-                - name: gpu-model
-                  value: "{{workflow.parameters.gpu-model}}"
-                - name: gpu-architecture
-                  value: "{{workflow.parameters.gpu-architecture}}"
-                - name: cuda-version
-                  value: "{{workflow.parameters.cuda-version}}"
-                - name: minimum-driver-version
-                  value: "{{workflow.parameters.minimum-driver-version}}"
                 - name: shell-type
                   value: "{{workflow.parameters.shell-type}}"
                 - name: entrypoint-type
@@ -144,8 +124,6 @@ spec:
               parameters:
                 - name: golden-image-uuid
                   value: "{{workflow.parameters.golden-image-uuid}}"
-                - name: runtime-image
-                  value: "{{workflow.parameters.runtime-image}}"
 
           - name: step-3-fetch-source
             depends: step-1-validate-input.Succeeded
@@ -162,6 +140,8 @@ spec:
             template: create-6-layer-dockerfile
             arguments:
               parameters:
+                - name: image-type
+                  value: "{{workflow.parameters.image-type}}"
                 - name: runtime-image
                   value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
                 - name: nexus-pypi-url
@@ -171,17 +151,19 @@ spec:
                 - name: requirements-lock-path
                   value: "{{workflow.parameters.requirements-lock-path}}"
                 - name: accelerator
-                  value: "{{workflow.parameters.accelerator}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.accelerator}}"
+                - name: architecture
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.architecture}}"
                 - name: gpu-model
-                  value: "{{workflow.parameters.gpu-model}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.gpu-model}}"
                 - name: gpu-architecture
-                  value: "{{workflow.parameters.gpu-architecture}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.gpu-architecture}}"
                 - name: cuda-version
-                  value: "{{workflow.parameters.cuda-version}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.cuda-version}}"
                 - name: minimum-driver-version
-                  value: "{{workflow.parameters.minimum-driver-version}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.minimum-driver-version}}"
                 - name: nvidia-driver-capabilities
-                  value: "{{workflow.parameters.nvidia-driver-capabilities}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.nvidia-driver-capabilities}}"
                 - name: shell-type
                   value: "{{workflow.parameters.shell-type}}"
                 - name: entrypoint-type
@@ -206,8 +188,6 @@ spec:
                   value: "{{tasks.step-1-validate-input.outputs.parameters.repository-name}}"
                 - name: image-name
                   value: "{{workflow.parameters.image-name}}"
-                - name: runtime-image
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
                 - name: buildkit-address
                   value: "{{workflow.parameters.buildkit-address}}"
                 - name: registry-address
@@ -224,6 +204,8 @@ spec:
             template: write-result
             arguments:
               parameters:
+                - name: image-type
+                  value: "{{workflow.parameters.image-type}}"
                 - name: repository-name
                   value: "{{tasks.step-1-validate-input.outputs.parameters.repository-name}}"
                 - name: git-revision
@@ -233,15 +215,17 @@ spec:
                 - name: requirements-lock-path
                   value: "{{workflow.parameters.requirements-lock-path}}"
                 - name: accelerator
-                  value: "{{workflow.parameters.accelerator}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.accelerator}}"
+                - name: architecture
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.architecture}}"
                 - name: gpu-model
-                  value: "{{workflow.parameters.gpu-model}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.gpu-model}}"
                 - name: gpu-architecture
-                  value: "{{workflow.parameters.gpu-architecture}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.gpu-architecture}}"
                 - name: cuda-version
-                  value: "{{workflow.parameters.cuda-version}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.cuda-version}}"
                 - name: minimum-driver-version
-                  value: "{{workflow.parameters.minimum-driver-version}}"
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.minimum-driver-version}}"
                 - name: runtime-image
                   value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
                 - name: lock-hash
@@ -254,16 +238,12 @@ spec:
     - name: validate-input
       inputs:
         parameters:
+          - name: image-type
           - name: repository-url
           - name: git-revision
           - name: context-path
           - name: requirements-lock-path
           - name: image-name
-          - name: accelerator
-          - name: gpu-model
-          - name: gpu-architecture
-          - name: cuda-version
-          - name: minimum-driver-version
           - name: shell-type
           - name: entrypoint-type
           - name: entrypoint-value
@@ -276,19 +256,15 @@ spec:
             valueFrom:
               path: /tmp/repository-name.txt
       script:
-        image: harbor.CHANGE_ME.internal/platform/python-build-tools:1.0.0@sha256:CHANGE_ME
+        image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
         command: [sh]
         source: |
           export REPOSITORY_URL="{{inputs.parameters.repository-url}}"
+          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
           export GIT_REVISION="{{inputs.parameters.git-revision}}"
           export CONTEXT_PATH="{{inputs.parameters.context-path}}"
           export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
           export IMAGE_NAME="{{inputs.parameters.image-name}}"
-          export ACCELERATOR="{{inputs.parameters.accelerator}}"
-          export GPU_MODEL="{{inputs.parameters.gpu-model}}"
-          export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
-          export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
-          export MINIMUM_DRIVER_VERSION="{{inputs.parameters.minimum-driver-version}}"
           export SHELL_TYPE="{{inputs.parameters.shell-type}}"
           export ENTRYPOINT_TYPE="{{inputs.parameters.entrypoint-type}}"
           export ENTRYPOINT_VALUE="{{inputs.parameters.entrypoint-value}}"
@@ -305,7 +281,6 @@ spec:
       inputs:
         parameters:
           - name: golden-image-uuid
-          - name: runtime-image
       outputs:
         parameters:
           - name: runtime-image
@@ -314,12 +289,32 @@ spec:
           - name: parent-image-digest
             valueFrom:
               path: /tmp/parent-image-digest.txt
+          - name: architecture
+            valueFrom:
+              path: /tmp/architecture.txt
+          - name: accelerator
+            valueFrom:
+              path: /tmp/accelerator.txt
+          - name: gpu-model
+            valueFrom:
+              path: /tmp/gpu-model.txt
+          - name: gpu-architecture
+            valueFrom:
+              path: /tmp/gpu-architecture.txt
+          - name: cuda-version
+            valueFrom:
+              path: /tmp/cuda-version.txt
+          - name: minimum-driver-version
+            valueFrom:
+              path: /tmp/minimum-driver-version.txt
+          - name: nvidia-driver-capabilities
+            valueFrom:
+              path: /tmp/nvidia-driver-capabilities.txt
       script:
-        image: harbor.CHANGE_ME.internal/platform/python-build-tools:1.0.0@sha256:CHANGE_ME
+        image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
         command: [sh]
         source: |
           export GOLDEN_IMAGE_UUID="{{inputs.parameters.golden-image-uuid}}"
-          export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
           export CATALOG_PATH=/catalog/golden-image-catalog.json
           python /opt/admin/scripts/resolve_golden_image.py
         volumeMounts:
@@ -357,11 +352,13 @@ spec:
     - name: create-6-layer-dockerfile
       inputs:
         parameters:
+          - name: image-type
           - name: runtime-image
           - name: nexus-pypi-url
           - name: context-path
           - name: requirements-lock-path
           - name: accelerator
+          - name: architecture
           - name: gpu-model
           - name: gpu-architecture
           - name: cuda-version
@@ -380,13 +377,15 @@ spec:
             valueFrom:
               path: /tmp/lock-hash.txt
       script:
-        image: harbor.CHANGE_ME.internal/platform/python-build-tools:1.0.0@sha256:CHANGE_ME
+        image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
         command: [sh]
         source: |
           export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
+          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
           export CONTEXT_PATH="{{inputs.parameters.context-path}}"
           export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
           export ACCELERATOR="{{inputs.parameters.accelerator}}"
+          export ARCHITECTURE="{{inputs.parameters.architecture}}"
           export GPU_MODEL="{{inputs.parameters.gpu-model}}"
           export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
           export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
@@ -413,7 +412,6 @@ spec:
         parameters:
           - name: repository-name
           - name: image-name
-          - name: runtime-image
           - name: buildkit-address
           - name: registry-address
           - name: registry-project
@@ -461,11 +459,13 @@ spec:
     - name: write-result
       inputs:
         parameters:
+          - name: image-type
           - name: repository-name
           - name: git-revision
           - name: context-path
           - name: requirements-lock-path
           - name: accelerator
+          - name: architecture
           - name: gpu-model
           - name: gpu-architecture
           - name: cuda-version
@@ -485,11 +485,13 @@ spec:
           export WORKFLOW_NAME="{{workflow.name}}"
           export WORKFLOW_UID="{{workflow.uid}}"
           export WORKFLOW_NAMESPACE="{{workflow.namespace}}"
+          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
           export REPOSITORY_NAME="{{inputs.parameters.repository-name}}"
           export GIT_REVISION="{{inputs.parameters.git-revision}}"
           export CONTEXT_PATH="{{inputs.parameters.context-path}}"
           export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
           export ACCELERATOR="{{inputs.parameters.accelerator}}"
+          export ARCHITECTURE="{{inputs.parameters.architecture}}"
           export GPU_MODEL="{{inputs.parameters.gpu-model}}"
           export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
           export CUDA_VERSION="{{inputs.parameters.cuda-version}}"

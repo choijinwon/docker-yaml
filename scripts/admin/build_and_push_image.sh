@@ -13,6 +13,7 @@ set -euo pipefail
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 IMAGE_NAME="${IMAGE_NAME:-}"
+APT_MIRROR_URL="${APT_MIRROR_URL:-}"
 
 # If the caller does not provide image-name, use the Git repository name.
 if [ -z "${IMAGE_NAME}" ]; then
@@ -31,6 +32,7 @@ buildctl build \
   --local context="${WORKSPACE_DIR}/build-context" \
   --local dockerfile="${WORKSPACE_DIR}/build-context" \
   --opt build-arg:NEXUS_PYPI_URL="${NEXUS_PYPI_URL}" \
+  --opt build-arg:APT_MIRROR_URL="${APT_MIRROR_URL}" \
   --import-cache "type=registry,ref=${CACHE_REFERENCE}" \
   --export-cache "type=registry,ref=${CACHE_REFERENCE},mode=max" \
   --output "type=image,name=${IMAGE_REFERENCE},push=true" \

@@ -5,6 +5,7 @@ set -euo pipefail
 # lock hash, and pushed image digest were used.
 
 : "${REPOSITORY_NAME:?REPOSITORY_NAME is required}"
+: "${IMAGE_TYPE:?IMAGE_TYPE is required}"
 : "${GIT_REVISION:?GIT_REVISION is required}"
 : "${CONTEXT_PATH:?CONTEXT_PATH is required}"
 : "${REQUIREMENTS_LOCK_PATH:?REQUIREMENTS_LOCK_PATH is required}"
@@ -24,16 +25,18 @@ cat > "${OUTPUT_DIR}/build-report.json" <<EOF
   "workflowName": "${WORKFLOW_NAME:-}",
   "workflowUid": "${WORKFLOW_UID:-}",
   "namespace": "${WORKFLOW_NAMESPACE:-}",
+  "imageType": "${IMAGE_TYPE}",
   "repositoryName": "${REPOSITORY_NAME}",
   "gitRevision": "${GIT_REVISION}",
-    "contextPath": "${CONTEXT_PATH}",
-    "requirementsLockPath": "${REQUIREMENTS_LOCK_PATH}",
-    "accelerator": "${ACCELERATOR}",
-    "gpuModel": "${GPU_MODEL:-}",
-    "gpuArchitecture": "${GPU_ARCHITECTURE:-}",
-    "cudaVersion": "${CUDA_VERSION:-}",
-    "minimumDriverVersion": "${MINIMUM_DRIVER_VERSION:-}",
-    "runtimeImage": "${RUNTIME_IMAGE}",
+  "contextPath": "${CONTEXT_PATH}",
+  "requirementsLockPath": "${REQUIREMENTS_LOCK_PATH}",
+  "architecture": "${ARCHITECTURE:-}",
+  "accelerator": "${ACCELERATOR}",
+  "gpuModel": "${GPU_MODEL:-}",
+  "gpuArchitecture": "${GPU_ARCHITECTURE:-}",
+  "cudaVersion": "${CUDA_VERSION:-}",
+  "minimumDriverVersion": "${MINIMUM_DRIVER_VERSION:-}",
+  "runtimeImage": "${RUNTIME_IMAGE}",
   "lockHash": "${LOCK_HASH}",
   "imageReference": "${IMAGE_REFERENCE}",
   "imageDigest": "${IMAGE_DIGEST}",
@@ -41,7 +44,7 @@ cat > "${OUTPUT_DIR}/build-report.json" <<EOF
     "1-golden-image",
     "2-runtime-policy",
     "3-dependency-lock",
-    "4-python-package-install",
+    "4-package-install",
     "5-application-source",
     "6-execution-config"
   ],

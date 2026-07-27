@@ -4,6 +4,7 @@ set -euo pipefail
 # This is where the image diagram becomes an actual Docker layer policy.
 
 : "${RUNTIME_IMAGE:?RUNTIME_IMAGE is required}"
+: "${IMAGE_TYPE:?IMAGE_TYPE is required}"
 : "${CONTEXT_PATH:?CONTEXT_PATH is required}"
 : "${REQUIREMENTS_LOCK_PATH:?REQUIREMENTS_LOCK_PATH is required}"
 : "${ACCELERATOR:?ACCELERATOR is required}"
@@ -17,12 +18,18 @@ set -euo pipefail
 WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 GPU_MODEL="${GPU_MODEL:-}"
 GPU_ARCHITECTURE="${GPU_ARCHITECTURE:-}"
+ARCHITECTURE="${ARCHITECTURE:-}"
 CUDA_VERSION="${CUDA_VERSION:-}"
 MINIMUM_DRIVER_VERSION="${MINIMUM_DRIVER_VERSION:-}"
 NVIDIA_DRIVER_CAPABILITIES="${NVIDIA_DRIVER_CAPABILITIES:-compute,utility}"
 SOURCE_DIR="${WORKSPACE_DIR}/source/${CONTEXT_PATH}"
 BUILD_CONTEXT="${WORKSPACE_DIR}/build-context"
 LOCK_FILE="${SOURCE_DIR}/${REQUIREMENTS_LOCK_PATH}"
+
+if [ "${IMAGE_TYPE}" != "user" ]; then
+  echo "user image Dockerfile requires IMAGE_TYPE=user" >&2
+  exit 1
+fi
 
 # requirements.lock is mandatory because package versions must be reproducible.
 if [ ! -f "${LOCK_FILE}" ]; then
@@ -84,6 +91,8 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT_PROFILE=${ENVIRONMENT_PROFILE}
+ENV IMAGE_TYPE=${IMAGE_TYPE}
+ENV ARCHITECTURE=${ARCHITECTURE}
 ENV ACCELERATOR=${ACCELERATOR}
 ENV GPU_MODEL=${GPU_MODEL}
 ENV GPU_ARCHITECTURE=${GPU_ARCHITECTURE}

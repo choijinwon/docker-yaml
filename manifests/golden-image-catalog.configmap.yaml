@@ -12,10 +12,11 @@ data:
           "python": "3.11.9",
           "os": "ubuntu",
           "osVersion": "22.04",
+          "architecture": "amd64",
           "accelerator": "cpu"
         },
         "image": {
-          "repository": "harbor.local/platform/python-golden",
+          "repository": "harbor.local/platform/golden",
           "tag": "py311-cpu-ubuntu2204",
           "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
         },
@@ -29,16 +30,18 @@ data:
           "python": "3.11.9",
           "os": "ubuntu",
           "osVersion": "22.04",
+          "architecture": "amd64",
           "accelerator": "cuda",
           "gpuModel": "b300",
           "gpuArchitecture": "blackwell",
           "cudaVersion": "12.8",
           "cudnnVersion": "CHANGE_ME",
           "ncclVersion": "CHANGE_ME",
-          "minimumDriverVersion": "570.26"
+          "minimumDriverVersion": "570.26",
+          "nvidiaDriverCapabilities": "compute,utility"
         },
         "image": {
-          "repository": "harbor.local/platform/python-golden",
+          "repository": "harbor.local/platform/golden",
           "tag": "py311-cuda128-b300-ubuntu2204",
           "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
         },
