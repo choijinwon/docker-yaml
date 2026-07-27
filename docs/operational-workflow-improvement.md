@@ -39,6 +39,13 @@
 | `scripts/image-builder/build_and_push_image.sh` | `step-5-build-and-push-image` | BuildKit Build/Push 및 Digest 추출 |
 | `scripts/image-builder/write_result.sh` | `step-6-write-result` | 빌드 결과 JSON 생성 |
 
+## 사용자 실행 스크립트
+
+| 스크립트 | 역할 |
+| --- | --- |
+| `scripts/user/submit_cpu_build.sh` | CPU 실행 manifest에 사용자 값을 채워 Workflow 제출 |
+| `scripts/user/submit_b300_build.sh` | B300 실행 manifest에 사용자 값을 채워 Workflow 제출 |
+
 ## 6단계 Docker Layer
 
 ![B300 CUDA 공식 기준 요약](nvidia-b300-cuda-reference.svg)
@@ -57,8 +64,10 @@
 - 전체 구조를 관리자/사용자/카탈로그/병렬 타깃 전체 구현이 아닌 단일 Application Image Build로 축소했습니다.
 - `golden-image-uuid`가 있으면 Catalog에서 `repository@digest`를 조회하고, 없으면 `runtime-image`를 직접 사용합니다.
 - `runtime-image`는 반드시 `repository@sha256:<64 hex>` 형식으로 검증합니다.
-- B300은 `accelerator=cuda`, `gpu_model=b300`, `gpu_architecture=blackwell`, `cuda_version>=12.8` 기준으로 검증합니다.
-- B300용 Golden Image는 일반 Ubuntu가 아니라 NVIDIA CUDA/cuDNN/NCCL 기반 Base Image를 내부 Harbor에 미러링해서 사용합니다.
+- CPU와 여러 GPU 타입을 같은 Workflow에서 Golden Image UUID로 선택합니다.
+- GPU용 Golden Image는 일반 Ubuntu가 아니라 GPU 아키텍처에 맞는 NVIDIA CUDA/cuDNN/NCCL 기반 Base Image를 내부 Harbor에 미러링해서 사용합니다.
+- B300은 현재 등록된 GPU 예시이며 `accelerator=cuda`, `gpu_model=b300`, `gpu_architecture=blackwell`, `cuda_version>=12.8` 기준으로 검증합니다.
+- 다른 GPU는 Catalog Record 추가로 확장합니다.
 - `requirements.lock`만 허용해 의존성 버전 흔들림을 막습니다.
 - Dockerfile에서 `requirements.lock`을 소스보다 먼저 복사해 패키지 레이어 캐시를 살립니다.
 - Branch/Commit, Context Path, Lock 파일 경로, 이미지명, 작업 디렉토리, 실행 UID, 환경 프로파일을 파라미터로 받습니다.
@@ -70,5 +79,7 @@
 2. `harbor-registry-auth`, `bitbucket-ssh-key` Secret 이름을 운영 Secret과 맞춥니다.
 3. `kubectl apply -k .`로 `python-image-builder-scripts` ConfigMap을 생성합니다.
 4. `workflows/python-image-build-6-layer.yaml`의 `CHANGE_ME` 값을 운영 주소로 치환합니다.
-5. `entrypoint-type`, `entrypoint-value`, `shell-type`을 서비스별 실행 방식에 맞춥니다.
-6. 먼저 단일 서비스 이미지 빌드로 검증한 뒤, 필요할 때만 병렬 타깃 빌드를 확장합니다.
+5. `manifests/run-cpu.workflow.yaml` 또는 `manifests/run-b300.workflow.yaml`를 서비스별 값으로 수정합니다.
+6. 또는 `scripts/user/submit_cpu_build.sh`, `scripts/user/submit_b300_build.sh`에 환경변수를 넘겨 실행합니다.
+7. `entrypoint-type`, `entrypoint-value`, `shell-type`을 서비스별 실행 방식에 맞춥니다.
+8. 먼저 CPU 실행 manifest로 검증하고, GPU는 Catalog/Driver/CUDA 기준 확인 후 실행합니다.

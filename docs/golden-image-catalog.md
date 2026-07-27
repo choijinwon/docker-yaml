@@ -6,36 +6,49 @@ Golden Image Catalog는 사용자가 입력한 UUID를 실제 Harbor Image Diges
 
 - 승인된 Golden Image 목록 관리
 - UUID와 `repository@digest` 매핑
-- Python/OS/CUDA 조합 검색
+- Python/OS/CPU/GPU/CUDA 조합 검색
 - Deprecated 이미지 차단
 - 사용자 Workflow에서 Base Image 직접 입력 제거
 
 ## Record 예시
 
 ```json
-{
-  "uuid": "py311-cuda128-b300-ubuntu2204-20260727",
-  "status": "active",
-  "runtime": {
-    "python": "3.11.9",
-    "os": "ubuntu",
-    "osVersion": "22.04",
-    "accelerator": "cuda",
-    "gpuModel": "b300",
-    "gpuArchitecture": "blackwell",
-    "cudaVersion": "12.8",
-    "cudnnVersion": "CHANGE_ME",
-    "ncclVersion": "CHANGE_ME",
-    "minimumDriverVersion": "570.26"
+[
+  {
+    "uuid": "py311-cpu-ubuntu2204-20260727",
+    "status": "active",
+    "runtime": {
+      "python": "3.11.9",
+      "os": "ubuntu",
+      "osVersion": "22.04",
+      "accelerator": "cpu"
+    },
+    "image": {
+      "repository": "harbor.local/platform/python-golden",
+      "tag": "py311-cpu-ubuntu2204",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    }
   },
-  "image": {
-    "repository": "harbor.local/platform/python-golden",
-    "tag": "py311-cuda128-b300-ubuntu2204",
-    "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-  },
-  "createdAt": "2026-07-27T00:00:00+09:00",
-  "owner": "platform"
-}
+  {
+    "uuid": "py311-cuda128-b300-ubuntu2204-20260727",
+    "status": "active",
+    "runtime": {
+      "python": "3.11.9",
+      "os": "ubuntu",
+      "osVersion": "22.04",
+      "accelerator": "cuda",
+      "gpuModel": "b300",
+      "gpuArchitecture": "blackwell",
+      "cudaVersion": "12.8",
+      "minimumDriverVersion": "570.26"
+    },
+    "image": {
+      "repository": "harbor.local/platform/python-golden",
+      "tag": "py311-cuda128-b300-ubuntu2204",
+      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  }
+]
 ```
 
 ## 조회 결과
@@ -64,3 +77,6 @@ harbor.local/platform/python-golden@sha256:<digest>
 - `blocked` 상태는 사용자 Workflow에서 즉시 실패 처리합니다.
 - B300 Catalog Record는 `gpuArchitecture=blackwell`과 `cudaVersion>=12.8`을 명시합니다.
 - B300 Golden Image는 일반 Ubuntu Base가 아니라 내부 Harbor에 미러링된 NVIDIA CUDA Runtime/Devel 계열 이미지를 사용합니다.
+- CPU Golden Image는 CUDA 관련 필드 없이 `accelerator=cpu`만 사용합니다.
+- 다른 GPU 타입은 새로운 Catalog Record를 추가해서 확장합니다.
+- Workflow는 GPU 종류를 직접 분기하지 않고 Catalog에서 조회된 `repository@digest`를 사용합니다.

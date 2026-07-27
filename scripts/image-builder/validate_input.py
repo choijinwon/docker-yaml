@@ -57,8 +57,8 @@ if not requirements_lock_path or requirements_lock_path.startswith("/") or ".." 
 if image_name and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,127}", image_name):
     fail(f"Invalid image-name: {image_name}")
 
-# B300 is a GPU workload, so the selected Golden Image must be CUDA/Blackwell based.
-# A plain Ubuntu or CPU Python image should not pass this validation.
+# GPU workloads must use CUDA Golden Images. CPU workloads can skip GPU fields.
+# B300 has an extra Blackwell/CUDA floor because it is a newer GPU architecture.
 if accelerator not in {"cpu", "cuda"}:
     fail("accelerator must be cpu or cuda")
 

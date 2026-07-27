@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: python-image-build-b300-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: python-image-build-6-layer
+  arguments:
+    parameters:
+      - name: bitbucket-address-user-code
+        value: ssh://git@bitbucket.CHANGE_ME/project/sample-app.git
+      - name: git-revision
+        value: main
+      - name: context-path
+        value: "."
+      - name: requirements-lock-path
+        value: requirements.lock
+      - name: golden-image-uuid
+        value: py311-cuda128-b300-ubuntu2204-20260727
+      - name: runtime-image
+        value: harbor.local/platform/python-golden@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      - name: accelerator
+        value: cuda
+      - name: gpu-model
+        value: b300
+      - name: gpu-architecture
+        value: blackwell
+      - name: cuda-version
+        value: "12.8"
+      - name: minimum-driver-version
+        value: "570.26"
+      - name: nvidia-driver-capabilities
+        value: compute,utility
+      - name: nexus-pypi-url
+        value: https://nexus.CHANGE_ME.internal/repository/pypi-group/simple
+      - name: registry-address
+        value: harbor.CHANGE_ME.internal
+      - name: registry-project
+        value: applications
+      - name: cache-registry-address
+        value: harbor.CHANGE_ME.internal/build-cache
+      - name: buildkit-address
+        value: tcp://buildkitd.buildkit.svc.cluster.local:1234
+      - name: image-name
+        value: sample-app-b300
+      - name: image-tag
+        value: latest
+      - name: shell-type
+        value: bash
+      - name: entrypoint-type
+        value: module
+      - name: entrypoint-value
+        value: src.api
+      - name: entrypoint-args
+        value: ""
+      - name: working-directory
+        value: /app
+      - name: run-as-user
+        value: "10001"
+      - name: environment-profile
+        value: production
