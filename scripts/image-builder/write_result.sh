@@ -8,6 +8,7 @@ set -euo pipefail
 : "${GIT_REVISION:?GIT_REVISION is required}"
 : "${CONTEXT_PATH:?CONTEXT_PATH is required}"
 : "${REQUIREMENTS_LOCK_PATH:?REQUIREMENTS_LOCK_PATH is required}"
+: "${ACCELERATOR:?ACCELERATOR is required}"
 : "${RUNTIME_IMAGE:?RUNTIME_IMAGE is required}"
 : "${LOCK_HASH:?LOCK_HASH is required}"
 : "${IMAGE_REFERENCE:?IMAGE_REFERENCE is required}"
@@ -25,9 +26,14 @@ cat > "${OUTPUT_DIR}/build-report.json" <<EOF
   "namespace": "${WORKFLOW_NAMESPACE:-}",
   "repositoryName": "${REPOSITORY_NAME}",
   "gitRevision": "${GIT_REVISION}",
-  "contextPath": "${CONTEXT_PATH}",
-  "requirementsLockPath": "${REQUIREMENTS_LOCK_PATH}",
-  "runtimeImage": "${RUNTIME_IMAGE}",
+    "contextPath": "${CONTEXT_PATH}",
+    "requirementsLockPath": "${REQUIREMENTS_LOCK_PATH}",
+    "accelerator": "${ACCELERATOR}",
+    "gpuModel": "${GPU_MODEL:-}",
+    "gpuArchitecture": "${GPU_ARCHITECTURE:-}",
+    "cudaVersion": "${CUDA_VERSION:-}",
+    "minimumDriverVersion": "${MINIMUM_DRIVER_VERSION:-}",
+    "runtimeImage": "${RUNTIME_IMAGE}",
   "lockHash": "${LOCK_HASH}",
   "imageReference": "${IMAGE_REFERENCE}",
   "imageDigest": "${IMAGE_DIGEST}",

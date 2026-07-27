@@ -24,7 +24,19 @@ spec:
       - name: golden-image-uuid
         value: ""
       - name: runtime-image
-        value: harbor.CHANGE_ME.internal/runtime/python311@sha256:CHANGE_ME_64_HEX_DIGEST
+        value: harbor.CHANGE_ME.internal/runtime/python311-cuda128-b300@sha256:CHANGE_ME_64_HEX_DIGEST
+      - name: accelerator
+        value: cuda
+      - name: gpu-model
+        value: b300
+      - name: gpu-architecture
+        value: blackwell
+      - name: cuda-version
+        value: "12.8"
+      - name: minimum-driver-version
+        value: "570.26"
+      - name: nvidia-driver-capabilities
+        value: compute,utility
       - name: nexus-pypi-url
         value: https://nexus.CHANGE_ME.internal/repository/pypi-group/simple
       - name: registry-address
@@ -103,6 +115,16 @@ spec:
                   value: "{{workflow.parameters.requirements-lock-path}}"
                 - name: image-name
                   value: "{{workflow.parameters.image-name}}"
+                - name: accelerator
+                  value: "{{workflow.parameters.accelerator}}"
+                - name: gpu-model
+                  value: "{{workflow.parameters.gpu-model}}"
+                - name: gpu-architecture
+                  value: "{{workflow.parameters.gpu-architecture}}"
+                - name: cuda-version
+                  value: "{{workflow.parameters.cuda-version}}"
+                - name: minimum-driver-version
+                  value: "{{workflow.parameters.minimum-driver-version}}"
                 - name: shell-type
                   value: "{{workflow.parameters.shell-type}}"
                 - name: entrypoint-type
@@ -148,6 +170,18 @@ spec:
                   value: "{{workflow.parameters.context-path}}"
                 - name: requirements-lock-path
                   value: "{{workflow.parameters.requirements-lock-path}}"
+                - name: accelerator
+                  value: "{{workflow.parameters.accelerator}}"
+                - name: gpu-model
+                  value: "{{workflow.parameters.gpu-model}}"
+                - name: gpu-architecture
+                  value: "{{workflow.parameters.gpu-architecture}}"
+                - name: cuda-version
+                  value: "{{workflow.parameters.cuda-version}}"
+                - name: minimum-driver-version
+                  value: "{{workflow.parameters.minimum-driver-version}}"
+                - name: nvidia-driver-capabilities
+                  value: "{{workflow.parameters.nvidia-driver-capabilities}}"
                 - name: shell-type
                   value: "{{workflow.parameters.shell-type}}"
                 - name: entrypoint-type
@@ -198,6 +232,16 @@ spec:
                   value: "{{workflow.parameters.context-path}}"
                 - name: requirements-lock-path
                   value: "{{workflow.parameters.requirements-lock-path}}"
+                - name: accelerator
+                  value: "{{workflow.parameters.accelerator}}"
+                - name: gpu-model
+                  value: "{{workflow.parameters.gpu-model}}"
+                - name: gpu-architecture
+                  value: "{{workflow.parameters.gpu-architecture}}"
+                - name: cuda-version
+                  value: "{{workflow.parameters.cuda-version}}"
+                - name: minimum-driver-version
+                  value: "{{workflow.parameters.minimum-driver-version}}"
                 - name: runtime-image
                   value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
                 - name: lock-hash
@@ -215,6 +259,11 @@ spec:
           - name: context-path
           - name: requirements-lock-path
           - name: image-name
+          - name: accelerator
+          - name: gpu-model
+          - name: gpu-architecture
+          - name: cuda-version
+          - name: minimum-driver-version
           - name: shell-type
           - name: entrypoint-type
           - name: entrypoint-value
@@ -235,6 +284,11 @@ spec:
           export CONTEXT_PATH="{{inputs.parameters.context-path}}"
           export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
           export IMAGE_NAME="{{inputs.parameters.image-name}}"
+          export ACCELERATOR="{{inputs.parameters.accelerator}}"
+          export GPU_MODEL="{{inputs.parameters.gpu-model}}"
+          export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
+          export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
+          export MINIMUM_DRIVER_VERSION="{{inputs.parameters.minimum-driver-version}}"
           export SHELL_TYPE="{{inputs.parameters.shell-type}}"
           export ENTRYPOINT_TYPE="{{inputs.parameters.entrypoint-type}}"
           export ENTRYPOINT_VALUE="{{inputs.parameters.entrypoint-value}}"
@@ -307,6 +361,12 @@ spec:
           - name: nexus-pypi-url
           - name: context-path
           - name: requirements-lock-path
+          - name: accelerator
+          - name: gpu-model
+          - name: gpu-architecture
+          - name: cuda-version
+          - name: minimum-driver-version
+          - name: nvidia-driver-capabilities
           - name: shell-type
           - name: entrypoint-type
           - name: entrypoint-value
@@ -326,6 +386,12 @@ spec:
           export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
           export CONTEXT_PATH="{{inputs.parameters.context-path}}"
           export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
+          export ACCELERATOR="{{inputs.parameters.accelerator}}"
+          export GPU_MODEL="{{inputs.parameters.gpu-model}}"
+          export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
+          export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
+          export MINIMUM_DRIVER_VERSION="{{inputs.parameters.minimum-driver-version}}"
+          export NVIDIA_DRIVER_CAPABILITIES="{{inputs.parameters.nvidia-driver-capabilities}}"
           export SHELL_TYPE="{{inputs.parameters.shell-type}}"
           export ENTRYPOINT_TYPE="{{inputs.parameters.entrypoint-type}}"
           export ENTRYPOINT_VALUE="{{inputs.parameters.entrypoint-value}}"
@@ -399,6 +465,11 @@ spec:
           - name: git-revision
           - name: context-path
           - name: requirements-lock-path
+          - name: accelerator
+          - name: gpu-model
+          - name: gpu-architecture
+          - name: cuda-version
+          - name: minimum-driver-version
           - name: runtime-image
           - name: lock-hash
           - name: image-reference
@@ -418,6 +489,11 @@ spec:
           export GIT_REVISION="{{inputs.parameters.git-revision}}"
           export CONTEXT_PATH="{{inputs.parameters.context-path}}"
           export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
+          export ACCELERATOR="{{inputs.parameters.accelerator}}"
+          export GPU_MODEL="{{inputs.parameters.gpu-model}}"
+          export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
+          export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
+          export MINIMUM_DRIVER_VERSION="{{inputs.parameters.minimum-driver-version}}"
           export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
           export LOCK_HASH="{{inputs.parameters.lock-hash}}"
           export IMAGE_REFERENCE="{{inputs.parameters.image-reference}}"

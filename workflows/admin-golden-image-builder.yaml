@@ -15,13 +15,17 @@ spec:
       - name: os_version
         value: "22.04"
       - name: accelerator
-        value: cpu
+        value: cuda
+      - name: gpu_model
+        value: b300
+      - name: gpu_architecture
+        value: blackwell
       - name: base_image
-        value: harbor.local/base/ubuntu:22.04
+        value: harbor.local/nvidia/cuda:12.8.0-cudnn-devel-ubuntu22.04
       - name: output_repository
         value: harbor.local/platform/python-golden
       - name: output_tag
-        value: py311-cpu-ubuntu2204
+        value: py311-cuda128-b300-ubuntu2204
   templates:
     - name: build-golden-image
       steps:
@@ -46,6 +50,11 @@ spec:
           accelerator = "{{workflow.parameters.accelerator}}"
           if accelerator not in {"cpu", "cuda"}:
               raise SystemExit(f"invalid accelerator: {accelerator}")
+          if accelerator == "cuda":
+              gpu_model = "{{workflow.parameters.gpu_model}}"
+              gpu_architecture = "{{workflow.parameters.gpu_architecture}}"
+              if gpu_model == "b300" and gpu_architecture != "blackwell":
+                  raise SystemExit("b300 requires blackwell gpu_architecture")
 
     - name: build-image
       container:
@@ -89,6 +98,8 @@ spec:
                   "os": "{{workflow.parameters.os_family}}",
                   "osVersion": "{{workflow.parameters.os_version}}",
                   "accelerator": "{{workflow.parameters.accelerator}}",
+                  "gpuModel": "{{workflow.parameters.gpu_model}}",
+                  "gpuArchitecture": "{{workflow.parameters.gpu_architecture}}",
               },
               "image": {
                   "repository": "{{workflow.parameters.output_repository}}",

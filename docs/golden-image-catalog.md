@@ -14,17 +14,23 @@ Golden Image Catalog는 사용자가 입력한 UUID를 실제 Harbor Image Diges
 
 ```json
 {
-  "uuid": "py311-cpu-ubuntu2204-20260727",
+  "uuid": "py311-cuda128-b300-ubuntu2204-20260727",
   "status": "active",
   "runtime": {
     "python": "3.11.9",
     "os": "ubuntu",
     "osVersion": "22.04",
-    "accelerator": "cpu"
+    "accelerator": "cuda",
+    "gpuModel": "b300",
+    "gpuArchitecture": "blackwell",
+    "cudaVersion": "12.8",
+    "cudnnVersion": "CHANGE_ME",
+    "ncclVersion": "CHANGE_ME",
+    "minimumDriverVersion": "570.26"
   },
   "image": {
     "repository": "harbor.local/platform/python-golden",
-    "tag": "py311-cpu-ubuntu2204",
+    "tag": "py311-cuda128-b300-ubuntu2204",
     "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
   },
   "createdAt": "2026-07-27T00:00:00+09:00",
@@ -56,3 +62,5 @@ harbor.local/platform/python-golden@sha256:<digest>
 - Digest가 바뀌면 새 UUID를 발급합니다.
 - 기존 UUID의 Digest를 조용히 바꾸지 않습니다.
 - `blocked` 상태는 사용자 Workflow에서 즉시 실패 처리합니다.
+- B300 Catalog Record는 `gpuArchitecture=blackwell`과 `cudaVersion>=12.8`을 명시합니다.
+- B300 Golden Image는 일반 Ubuntu Base가 아니라 내부 Harbor에 미러링된 NVIDIA CUDA Runtime/Devel 계열 이미지를 사용합니다.

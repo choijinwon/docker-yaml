@@ -8,6 +8,7 @@
 - Golden Image는 UUID로 조회하고 실제 빌드에는 Harbor Repository와 Digest를 사용합니다.
 - 사용자는 승인된 Golden Image UUID, Git 소스, `requirements.lock`, 실행 Shell/Entrypoint만 입력합니다.
 - MLflow, PyTorch, NumPy 등 애플리케이션 패키지는 `requirements.lock`에서 관리합니다.
+- B300 GPU는 일반 Ubuntu Base Image가 아니라 Blackwell 지원 CUDA Golden Image를 사용합니다.
 - 알람 및 Webhook 단계는 포함하지 않습니다.
 
 ## 구조

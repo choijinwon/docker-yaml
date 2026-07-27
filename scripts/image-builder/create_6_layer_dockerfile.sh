@@ -6,6 +6,7 @@ set -euo pipefail
 : "${RUNTIME_IMAGE:?RUNTIME_IMAGE is required}"
 : "${CONTEXT_PATH:?CONTEXT_PATH is required}"
 : "${REQUIREMENTS_LOCK_PATH:?REQUIREMENTS_LOCK_PATH is required}"
+: "${ACCELERATOR:?ACCELERATOR is required}"
 : "${SHELL_TYPE:?SHELL_TYPE is required}"
 : "${ENTRYPOINT_TYPE:?ENTRYPOINT_TYPE is required}"
 : "${ENTRYPOINT_VALUE:?ENTRYPOINT_VALUE is required}"
@@ -14,6 +15,11 @@ set -euo pipefail
 : "${ENVIRONMENT_PROFILE:?ENVIRONMENT_PROFILE is required}"
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
+GPU_MODEL="${GPU_MODEL:-}"
+GPU_ARCHITECTURE="${GPU_ARCHITECTURE:-}"
+CUDA_VERSION="${CUDA_VERSION:-}"
+MINIMUM_DRIVER_VERSION="${MINIMUM_DRIVER_VERSION:-}"
+NVIDIA_DRIVER_CAPABILITIES="${NVIDIA_DRIVER_CAPABILITIES:-compute,utility}"
 SOURCE_DIR="${WORKSPACE_DIR}/source/${CONTEXT_PATH}"
 BUILD_CONTEXT="${WORKSPACE_DIR}/build-context"
 LOCK_FILE="${SOURCE_DIR}/${REQUIREMENTS_LOCK_PATH}"
@@ -67,16 +73,24 @@ esac
 # The generated Dockerfile intentionally has only 6 conceptual layers:
 # 1 base, 2 runtime policy, 3 lock copy, 4 package install, 5 source copy, 6 run config.
 cat > "${BUILD_CONTEXT}/Dockerfile" <<EOF
-# 1. Golden Image Layer: Python / OS / CUDA / CA policy comes from approved base digest
+# 1. Golden Image Layer: Python / OS / CUDA / CA policy comes from approved base digest.
+#    For B300, this must be a Blackwell-capable CUDA image, not a plain Ubuntu image.
 FROM ${RUNTIME_IMAGE}
 
-# 2. Runtime Policy Layer: working directory, Python, pip, and environment policy
+# 2. Runtime Policy Layer: working directory, Python, pip, GPU, and environment policy
 WORKDIR ${WORKING_DIRECTORY}
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT_PROFILE=${ENVIRONMENT_PROFILE}
+ENV ACCELERATOR=${ACCELERATOR}
+ENV GPU_MODEL=${GPU_MODEL}
+ENV GPU_ARCHITECTURE=${GPU_ARCHITECTURE}
+ENV CUDA_VERSION=${CUDA_VERSION}
+ENV MINIMUM_NVIDIA_DRIVER_VERSION=${MINIMUM_DRIVER_VERSION}
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES}
 
 # 3. Dependency Lock Layer: copy only requirements.lock first for cache reuse
 COPY requirements.lock ${WORKING_DIRECTORY}/requirements.lock

@@ -44,7 +44,7 @@
 | 단계 | Dockerfile 영역 | 목적 |
 | --- | --- | --- |
 | 1 | Golden Image Layer | Python, OS, CUDA, CA 정책을 승인된 Base Digest에서 상속 |
-| 2 | Runtime Policy Layer | `WORKDIR`, Python/Pip 실행 정책 고정 |
+| 2 | Runtime Policy Layer | `WORKDIR`, Python/Pip, GPU Runtime 환경 정책 고정 |
 | 3 | Dependency Lock Layer | `requirements.lock`만 먼저 복사해 캐시 효율 확보 |
 | 4 | Python Package Layer | Nexus/내부 PyPI에서 고정 버전 설치 |
 | 5 | Application Source Layer | 사용자 소스 복사 |
@@ -55,6 +55,8 @@
 - 전체 구조를 관리자/사용자/카탈로그/병렬 타깃 전체 구현이 아닌 단일 Application Image Build로 축소했습니다.
 - `golden-image-uuid`가 있으면 Catalog에서 `repository@digest`를 조회하고, 없으면 `runtime-image`를 직접 사용합니다.
 - `runtime-image`는 반드시 `repository@sha256:<64 hex>` 형식으로 검증합니다.
+- B300은 `accelerator=cuda`, `gpu_model=b300`, `gpu_architecture=blackwell`, `cuda_version>=12.8` 기준으로 검증합니다.
+- B300용 Golden Image는 일반 Ubuntu가 아니라 NVIDIA CUDA/cuDNN/NCCL 기반 Base Image를 내부 Harbor에 미러링해서 사용합니다.
 - `requirements.lock`만 허용해 의존성 버전 흔들림을 막습니다.
 - Dockerfile에서 `requirements.lock`을 소스보다 먼저 복사해 패키지 레이어 캐시를 살립니다.
 - Branch/Commit, Context Path, Lock 파일 경로, 이미지명, 작업 디렉토리, 실행 UID, 환경 프로파일을 파라미터로 받습니다.
