@@ -3,6 +3,7 @@ generatorOptions:
 
 resources:
   - manifests/golden-image-catalog.configmap.yaml
+  - manifests/user-image-ui-schema.configmap.yaml
 
 configMapGenerator:
   - name: admin-scripts

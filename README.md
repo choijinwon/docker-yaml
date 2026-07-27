@@ -16,6 +16,7 @@
 ## 문서
 
 - [파라미터 표준](docs/parameter-standard.md)
+- [사용자 UI 입력 가이드](docs/user-ui-guide.md)
 - [Golden Image Catalog](docs/golden-image-catalog.md)
 - [현업 설명 가이드](docs/explanation-guide.md)
 - [B300 CUDA 공식 기준 요약 이미지](docs/nvidia-b300-cuda-reference.svg)
@@ -35,8 +36,10 @@ docker-yaml/
 │   ├── nvidia-b300-cuda-reference.svg
 │   ├── operational-workflow-improvement.md
 │   ├── parameter-standard.md
+│   ├── user-ui-guide.md
 ├── manifests/
 │   ├── golden-image-catalog.configmap.yaml
+│   ├── user-image-ui-schema.configmap.yaml
 │   ├── run-b300.workflow.yaml
 │   └── run-cpu.workflow.yaml
 ├── scripts/

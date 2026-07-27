@@ -218,6 +218,43 @@ Shell / Entrypoint
 
 사용자는 `runtime-image`, `accelerator`, `gpu-model`, `cuda-version`, `minimum-driver-version`을 직접 입력하지 않습니다. 이 값들은 Golden Image Catalog에서 자동으로 조회됩니다.
 
+## 사용자 UI Shell 설명
+
+사용자 UI에는 Shell/Entrypoint 영역을 별도 그룹으로 보여주는 것을 권장합니다.
+
+```text
+Runtime Command
+- Shell
+- Entrypoint 방식
+- 실행 대상
+- 실행 인자
+- 작업 디렉토리
+- 실행 UID
+```
+
+설명 포인트:
+
+- Shell은 컨테이너 시작 명령을 감싸는 실행 Shell입니다.
+- 일반 Python 서비스는 `bash`를 기본값으로 권장합니다.
+- Bash가 없는 경량 이미지에서는 `sh`를 선택할 수 있습니다.
+- Entrypoint 방식은 `module`, `script`, `binary`, `shell` 중 하나입니다.
+- 사용자가 입력한 값은 Dockerfile의 실행 설정 레이어에 반영됩니다.
+
+예시:
+
+```text
+shell-type        = bash
+entrypoint-type   = module
+entrypoint-value  = src.api
+entrypoint-args   = --port 8080
+```
+
+위 입력은 컨테이너에서 다음 실행 의도로 해석됩니다.
+
+```text
+bash -lc "python -m src.api --port 8080"
+```
+
 CPU 실행:
 
 ```text

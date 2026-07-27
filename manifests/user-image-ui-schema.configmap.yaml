@@ -1,0 +1,190 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-image-ui-schema
+data:
+  user-image-ui-schema.json: |
+    {
+      "title": "User Image Build",
+      "description": "Build a user application image from an approved Golden Image.",
+      "groups": [
+        {
+          "id": "golden-image",
+          "label": "Golden Image",
+          "fields": [
+            {
+              "name": "golden-image-uuid",
+              "label": "Golden Image",
+              "type": "select",
+              "required": true,
+              "helpText": "운영에서 배포한 Golden Image UUID를 선택합니다. Base Image, GPU, CUDA, Driver 값은 직접 입력하지 않습니다."
+            }
+          ]
+        },
+        {
+          "id": "source",
+          "label": "Source",
+          "fields": [
+            {
+              "name": "bitbucket-address-user-code",
+              "label": "Git Repository",
+              "type": "text",
+              "required": true,
+              "placeholder": "ssh://git@bitbucket.local/project/app.git"
+            },
+            {
+              "name": "git-revision",
+              "label": "Branch / Tag / Commit",
+              "type": "text",
+              "required": true,
+              "default": "main"
+            },
+            {
+              "name": "context-path",
+              "label": "Context Path",
+              "type": "text",
+              "required": true,
+              "default": "."
+            }
+          ]
+        },
+        {
+          "id": "dependency",
+          "label": "Dependency",
+          "fields": [
+            {
+              "name": "requirements-lock-path",
+              "label": "requirements.lock Path",
+              "type": "text",
+              "required": true,
+              "default": "requirements.lock",
+              "helpText": "패키지 버전을 재현 가능하게 고정한 lock 파일 경로입니다."
+            }
+          ]
+        },
+        {
+          "id": "output-image",
+          "label": "Output Image",
+          "fields": [
+            {
+              "name": "registry-project",
+              "label": "Harbor Project",
+              "type": "text",
+              "required": true,
+              "default": "applications"
+            },
+            {
+              "name": "image-name",
+              "label": "Image Name",
+              "type": "text",
+              "required": false,
+              "helpText": "비워두면 Git Repository 이름을 사용합니다."
+            },
+            {
+              "name": "image-tag",
+              "label": "Image Tag",
+              "type": "text",
+              "required": true,
+              "default": "latest"
+            }
+          ]
+        },
+        {
+          "id": "runtime-command",
+          "label": "Runtime Command",
+          "fields": [
+            {
+              "name": "shell-type",
+              "label": "Shell",
+              "type": "select",
+              "required": true,
+              "default": "bash",
+              "options": [
+                {
+                  "value": "bash",
+                  "label": "bash",
+                  "description": "Bash Shell. 일반 Python 서비스에 권장합니다."
+                },
+                {
+                  "value": "sh",
+                  "label": "sh",
+                  "description": "POSIX Shell. Bash가 없는 경량 이미지에서 사용합니다."
+                }
+              ],
+              "helpText": "컨테이너가 시작될 때 실행 명령을 감싸는 Shell입니다."
+            },
+            {
+              "name": "entrypoint-type",
+              "label": "Entrypoint Type",
+              "type": "select",
+              "required": true,
+              "default": "module",
+              "options": [
+                {
+                  "value": "module",
+                  "label": "module",
+                  "description": "python -m <module> 형태로 실행합니다."
+                },
+                {
+                  "value": "script",
+                  "label": "script",
+                  "description": "python <file.py> 형태로 실행합니다."
+                },
+                {
+                  "value": "binary",
+                  "label": "binary",
+                  "description": "gunicorn 같은 실행 파일을 직접 실행합니다."
+                },
+                {
+                  "value": "shell",
+                  "label": "shell",
+                  "description": "시작 Shell 스크립트를 실행합니다."
+                }
+              ],
+              "helpText": "애플리케이션 실행 대상을 어떤 방식으로 해석할지 선택합니다."
+            },
+            {
+              "name": "entrypoint-value",
+              "label": "Entrypoint Value",
+              "type": "text",
+              "required": true,
+              "default": "src.api",
+              "helpText": "module이면 src.api, script이면 app.py, binary이면 gunicorn, shell이면 scripts/start.sh처럼 입력합니다."
+            },
+            {
+              "name": "entrypoint-args",
+              "label": "Entrypoint Args",
+              "type": "text",
+              "required": false,
+              "placeholder": "--port 8080",
+              "helpText": "실행 대상 뒤에 붙일 옵션입니다."
+            },
+            {
+              "name": "working-directory",
+              "label": "Working Directory",
+              "type": "text",
+              "required": false,
+              "default": "/app"
+            },
+            {
+              "name": "run-as-user",
+              "label": "Run As UID",
+              "type": "number",
+              "required": false,
+              "default": "10001",
+              "helpText": "컨테이너를 실행할 숫자 UID입니다."
+            }
+          ]
+        }
+      ],
+      "hiddenRuntimeFields": [
+        "runtime-image",
+        "architecture",
+        "accelerator",
+        "gpu-model",
+        "gpu-architecture",
+        "cuda-version",
+        "minimum-driver-version",
+        "nvidia-driver-capabilities"
+      ]
+    }

@@ -49,6 +49,28 @@
 | `run_as_user` | N | `10001` | 컨테이너 실행 사용자 UID |
 | `environment_profile` | N | `production` | 환경 프로파일 |
 
+## 사용자 UI Shell / Entrypoint 표시 기준
+
+User Image Build UI에서는 Shell/Entrypoint를 `Runtime Command` 그룹으로 분리해서 보여줍니다.
+
+| UI 항목 | 연결 파라미터 | UI 타입 | 기본값 | 설명 |
+| --- | --- | --- | --- | --- |
+| Shell | `shell_type` | select | `bash` | 컨테이너 시작 명령을 감싸는 Shell |
+| Entrypoint 방식 | `entrypoint_type` | select | `module` | 실행 대상을 해석하는 방식 |
+| 실행 대상 | `entrypoint_value` | text | `src.api` | 모듈명, 스크립트 경로, 바이너리명, Shell 스크립트 경로 |
+| 실행 인자 | `entrypoint_args` | text | 빈 값 | 실행 대상 뒤에 붙일 옵션 |
+| 작업 디렉토리 | `working_directory` | text | `/app` | 컨테이너 내부 실행 위치 |
+| 실행 UID | `run_as_user` | number | `10001` | 컨테이너 실행 사용자 UID |
+
+Entrypoint 방식별 예시:
+
+| `entrypoint_type` | `entrypoint_value` 예시 | 실행 의도 |
+| --- | --- | --- |
+| `module` | `src.api` | `python -m src.api` |
+| `script` | `app.py` | `python app.py` |
+| `binary` | `gunicorn` | `gunicorn` |
+| `shell` | `scripts/start.sh` | `bash scripts/start.sh` |
+
 ## User Workflow가 Catalog에서 상속하는 값
 
 사용자는 아래 값을 직접 입력하지 않습니다. `golden_image_uuid`로 Catalog를 조회한 뒤 Workflow 내부에서 자동으로 전달합니다.
