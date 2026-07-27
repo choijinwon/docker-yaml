@@ -32,12 +32,12 @@
 
 | 스크립트 | 호출 Task | 역할 |
 | --- | --- | --- |
-| `scripts/image-builder/validate_input.py` | `step-1-validate-input` | 입력 파라미터 검증 및 Repository 이름 추출 |
-| `scripts/image-builder/resolve_golden_image.py` | `step-2-resolve-golden-image` | Golden Image UUID 또는 Runtime Image Digest 확정 |
-| `scripts/image-builder/fetch_source.sh` | `step-3-fetch-source` | Git Clone 및 Branch/Commit 체크아웃 |
-| `scripts/image-builder/create_6_layer_dockerfile.sh` | `step-4-create-6-layer-dockerfile` | Lock 검증, Build Context 생성, 6단계 Dockerfile 생성 |
-| `scripts/image-builder/build_and_push_image.sh` | `step-5-build-and-push-image` | BuildKit Build/Push 및 Digest 추출 |
-| `scripts/image-builder/write_result.sh` | `step-6-write-result` | 빌드 결과 JSON 생성 |
+| `scripts/admin/validate_input.py` | `step-1-validate-input` | 입력 파라미터 검증 및 Repository 이름 추출 |
+| `scripts/admin/resolve_golden_image.py` | `step-2-resolve-golden-image` | Golden Image UUID 또는 Runtime Image Digest 확정 |
+| `scripts/admin/fetch_source.sh` | `step-3-fetch-source` | Git Clone 및 Branch/Commit 체크아웃 |
+| `scripts/admin/create_6_layer_dockerfile.sh` | `step-4-create-6-layer-dockerfile` | Lock 검증, Build Context 생성, 6단계 Dockerfile 생성 |
+| `scripts/admin/build_and_push_image.sh` | `step-5-build-and-push-image` | BuildKit Build/Push 및 Digest 추출 |
+| `scripts/admin/write_result.sh` | `step-6-write-result` | 빌드 결과 JSON 생성 |
 
 ## 사용자 실행 스크립트
 
@@ -77,7 +77,7 @@
 
 1. `manifests/golden-image-catalog.configmap.yaml`의 Catalog를 운영 값으로 교체합니다.
 2. `harbor-registry-auth`, `bitbucket-ssh-key` Secret 이름을 운영 Secret과 맞춥니다.
-3. `kubectl apply -k .`로 `python-image-builder-scripts` ConfigMap을 생성합니다.
+3. `kubectl apply -k .`로 `python-admin-scripts` ConfigMap을 생성합니다.
 4. `workflows/python-image-build-6-layer.yaml`의 `CHANGE_ME` 값을 운영 주소로 치환합니다.
 5. `manifests/run-cpu.workflow.yaml` 또는 `manifests/run-b300.workflow.yaml`를 서비스별 값으로 수정합니다.
 6. 또는 `scripts/user/submit_cpu_build.sh`, `scripts/user/submit_b300_build.sh`에 환경변수를 넘겨 실행합니다.

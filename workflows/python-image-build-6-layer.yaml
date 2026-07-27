@@ -5,7 +5,7 @@ metadata:
   namespace: argo
   labels:
     workflows.argoproj.io/creator: system-serviceaccount-argo-argo-server
-    app.kubernetes.io/name: python-image-builder
+    app.kubernetes.io/name: python-admin
     app.kubernetes.io/part-of: image-build-standard
 spec:
   entrypoint: main
@@ -92,9 +92,9 @@ spec:
       configMap:
         name: golden-image-catalog
         optional: true
-    - name: image-builder-scripts
+    - name: admin-scripts
       configMap:
-        name: python-image-builder-scripts
+        name: python-admin-scripts
         defaultMode: 0555
 
   templates:
@@ -295,10 +295,10 @@ spec:
           export WORKING_DIRECTORY="{{inputs.parameters.working-directory}}"
           export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
           export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
-          python /opt/image-builder/scripts/validate_input.py
+          python /opt/admin/scripts/validate_input.py
         volumeMounts:
-          - name: image-builder-scripts
-            mountPath: /opt/image-builder/scripts
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
             readOnly: true
 
     - name: resolve-golden-image
@@ -321,10 +321,10 @@ spec:
           export GOLDEN_IMAGE_UUID="{{inputs.parameters.golden-image-uuid}}"
           export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
           export CATALOG_PATH=/catalog/golden-image-catalog.json
-          python /opt/image-builder/scripts/resolve_golden_image.py
+          python /opt/admin/scripts/resolve_golden_image.py
         volumeMounts:
-          - name: image-builder-scripts
-            mountPath: /opt/image-builder/scripts
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
             readOnly: true
           - name: golden-image-catalog
             mountPath: /catalog
@@ -343,10 +343,10 @@ spec:
             export REPOSITORY_URL="{{inputs.parameters.repository-url}}"
             export GIT_REVISION="{{inputs.parameters.git-revision}}"
             export WORKSPACE_DIR=/workspace
-            sh /opt/image-builder/scripts/fetch_source.sh
+            sh /opt/admin/scripts/fetch_source.sh
         volumeMounts:
-          - name: image-builder-scripts
-            mountPath: /opt/image-builder/scripts
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
             readOnly: true
           - name: workspace
             mountPath: /workspace
@@ -400,10 +400,10 @@ spec:
           export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
           export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
           export WORKSPACE_DIR=/workspace
-          sh /opt/image-builder/scripts/create_6_layer_dockerfile.sh
+          sh /opt/admin/scripts/create_6_layer_dockerfile.sh
         volumeMounts:
-          - name: image-builder-scripts
-            mountPath: /opt/image-builder/scripts
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
             readOnly: true
           - name: workspace
             mountPath: /workspace
@@ -440,10 +440,10 @@ spec:
           export IMAGE_TAG="{{inputs.parameters.image-tag}}"
           export NEXUS_PYPI_URL="{{workflow.parameters.nexus-pypi-url}}"
           export WORKSPACE_DIR=/workspace
-          sh /opt/image-builder/scripts/build_and_push_image.sh
+          sh /opt/admin/scripts/build_and_push_image.sh
         volumeMounts:
-          - name: image-builder-scripts
-            mountPath: /opt/image-builder/scripts
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
             readOnly: true
           - name: workspace
             mountPath: /workspace
@@ -499,10 +499,10 @@ spec:
           export IMAGE_REFERENCE="{{inputs.parameters.image-reference}}"
           export IMAGE_DIGEST="{{inputs.parameters.image-digest}}"
           export WORKSPACE_DIR=/workspace
-          sh /opt/image-builder/scripts/write_result.sh
+          sh /opt/admin/scripts/write_result.sh
         volumeMounts:
-          - name: image-builder-scripts
-            mountPath: /opt/image-builder/scripts
+          - name: admin-scripts
+            mountPath: /opt/admin/scripts
             readOnly: true
           - name: workspace
             mountPath: /workspace

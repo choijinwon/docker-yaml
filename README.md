@@ -16,6 +16,7 @@
 
 - [파라미터 표준](docs/parameter-standard.md)
 - [Golden Image Catalog](docs/golden-image-catalog.md)
+- [현업 설명 가이드](docs/explanation-guide.md)
 - [B300 CUDA 공식 기준 요약 이미지](docs/nvidia-b300-cuda-reference.svg)
 - [6단계 Docker Layer Image Build Workflow](workflows/python-image-build-6-layer.yaml)
 - [운영형 Workflow 개선 포인트](docs/operational-workflow-improvement.md)
@@ -28,6 +29,7 @@ docker-yaml/
 ├── kustomization.yaml
 ├── docs/
 │   ├── golden-image-catalog.md
+│   ├── explanation-guide.md
 │   ├── nvidia-b300-cuda-reference.svg
 │   ├── operational-workflow-improvement.md
 │   ├── parameter-standard.md
@@ -39,7 +41,7 @@ docker-yaml/
 │   ├── user/
 │   │   ├── submit_b300_build.sh
 │   │   └── submit_cpu_build.sh
-│   └── image-builder/
+│   └── admin/
 │       ├── build_and_push_image.sh
 │       ├── create_6_layer_dockerfile.sh
 │       ├── fetch_source.sh

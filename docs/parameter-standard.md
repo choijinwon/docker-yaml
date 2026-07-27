@@ -62,3 +62,35 @@
 - `entrypoint_type`과 `entrypoint_value`는 필수입니다.
 - `context_path`와 `requirements_lock_path`는 상대 경로만 허용합니다.
 - `run_as_user`는 숫자 UID를 사용합니다.
+
+## 추가 파라미터가 필요한 이유
+
+초기에는 `git_url`, `requirements.lock`, `image tag` 정도만 있어도 이미지 빌드가 가능해 보일 수 있습니다.
+
+하지만 운영 환경에서는 빌드가 성공하는 것보다 더 중요한 요구사항이 있습니다.
+
+- 동일한 입력으로 다시 빌드할 수 있어야 합니다.
+- CPU/GPU 실행 환경 차이가 명확히 기록되어야 합니다.
+- B300 같은 신규 GPU는 CUDA/Driver 호환 기준이 함께 관리되어야 합니다.
+- 사용자가 임의 Base Image나 임의 Shell 명령으로 보안 기준을 우회하면 안 됩니다.
+- Harbor에 올라간 결과 이미지가 어떤 서비스, 소스, 환경에서 나온 것인지 추적 가능해야 합니다.
+
+그래서 추가 파라미터는 다음 기준으로 분리했습니다.
+
+| 분류 | 파라미터 | 필요한 이유 |
+| --- | --- | --- |
+| Golden Image 선택 | `golden_image_uuid` | 태그가 아닌 운영 승인 UUID로 기준 이미지를 선택하기 위해 |
+| CPU/GPU 구분 | `accelerator` | CPU 이미지와 GPU 이미지를 같은 Workflow에서 구분하기 위해 |
+| GPU 호환성 | `gpu_model`, `gpu_architecture`, `cuda_version`, `minimum_driver_version`, `nvidia_driver_capabilities` | B300/H100/A100 등 GPU별 CUDA 및 Driver 기준을 기록하기 위해 |
+| 소스 고정 | `git_url`, `git_revision`, `context_path` | 어떤 저장소의 어느 Revision을 빌드했는지 재현하기 위해 |
+| 패키지 고정 | `requirements_lock_path` | 빌드 시점마다 다른 패키지 버전이 설치되는 문제를 막기 위해 |
+| 실행 명령 표준화 | `shell_type`, `entrypoint_type`, `entrypoint_value`, `entrypoint_args`, `working_directory`, `run_as_user` | Shell/Entrypoint를 명시적으로 관리하고 권한을 제한하기 위해 |
+| 결과 이미지 추적 | `image_name`, `output_repository`, `output_tag`, `environment_profile` | Harbor Push 결과와 운영 환경을 연결해서 추적하기 위해 |
+
+현업 설명용 요약:
+
+```text
+추가 파라미터는 빌드 옵션을 늘린 것이 아니라 운영 통제 항목을 명시한 것입니다.
+Golden Image, 소스 Revision, requirements.lock, GPU 호환성, 실행 명령, 결과 이미지 위치를
+모두 기록해야 재현성, 보안, 감사 추적이 가능합니다.
+```
