@@ -39,7 +39,7 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   workflowTemplateRef:
-    name: user-image-build-6-layer
+    name: user-image-build
   arguments:
     parameters:
       - name: image-type

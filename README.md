@@ -19,8 +19,8 @@
 - [Golden Image Catalog](docs/golden-image-catalog.md)
 - [현업 설명 가이드](docs/explanation-guide.md)
 - [B300 CUDA 공식 기준 요약 이미지](docs/nvidia-b300-cuda-reference.svg)
-- [Golden Image 6단계 Workflow](workflows/golden-image-build-6-layer.yaml)
-- [User Image 6단계 Workflow](workflows/user-image-build-6-layer.yaml)
+- [Golden Image 6단계 Workflow](workflows/golden-image-build.yaml)
+- [User Image 6단계 Workflow](workflows/user-image-build.yaml)
 - [운영형 Workflow 개선 포인트](docs/operational-workflow-improvement.md)
 
 ## 필요한 구조
@@ -54,23 +54,23 @@ docker-yaml/
 │       ├── write_golden_result.sh
 │       └── write_result.sh
 └── workflows/
-    ├── golden-image-build-6-layer.yaml
-    └── user-image-build-6-layer.yaml
+    ├── golden-image-build.yaml
+    └── user-image-build.yaml
 ```
 
 ## 사용 흐름
 
 1. `kubectl apply -k .`로 Catalog와 스크립트 ConfigMap을 생성합니다.
-2. `workflows/golden-image-build-6-layer.yaml`를 등록합니다.
-3. `workflows/user-image-build-6-layer.yaml`를 등록합니다.
+2. `workflows/golden-image-build.yaml`를 등록합니다.
+3. `workflows/user-image-build.yaml`를 등록합니다.
 4. 운영자는 Golden Image Workflow로 CPU/GPU 기준 이미지를 생성합니다.
 5. 생성된 Digest를 `manifests/golden-image-catalog.configmap.yaml`에 등록합니다.
 6. 사용자는 User Image Workflow 실행 manifest를 제출합니다.
 
 ```text
 kubectl apply -k .
-kubectl apply -f workflows/golden-image-build-6-layer.yaml
-kubectl apply -f workflows/user-image-build-6-layer.yaml
+kubectl apply -f workflows/golden-image-build.yaml
+kubectl apply -f workflows/user-image-build.yaml
 kubectl create -f manifests/run-cpu.workflow.yaml
 kubectl create -f manifests/run-b300.workflow.yaml
 ```

@@ -28,10 +28,10 @@ Golden Image Catalog
 ## 핵심 구조
 
 ```text
-workflows/golden-image-build-6-layer.yaml
+workflows/golden-image-build.yaml
 - 운영자가 CPU/GPU Golden Image를 생성하는 WorkflowTemplate
 
-workflows/user-image-build-6-layer.yaml
+workflows/user-image-build.yaml
 - 사용자가 Application Image를 생성하는 WorkflowTemplate
 
 manifests/golden-image-catalog.configmap.yaml
@@ -199,8 +199,8 @@ Golden Image 6레이어:
 2. Harbor에 repository@digest 형태로 Push
 3. golden-image-catalog.configmap.yaml에 UUID와 Digest 등록
 4. admin-scripts ConfigMap 배포
-5. golden-image-build-6-layer WorkflowTemplate 등록
-6. user-image-build-6-layer WorkflowTemplate 등록
+5. golden-image-build WorkflowTemplate 등록
+6. user-image-build WorkflowTemplate 등록
 ```
 
 ## 사용자 역할
