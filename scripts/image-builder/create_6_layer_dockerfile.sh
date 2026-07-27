@@ -1,5 +1,8 @@
 set -euo pipefail
 
+# Build the Docker context and generate the 6-layer Dockerfile.
+# This is where the image diagram becomes an actual Docker layer policy.
+
 : "${RUNTIME_IMAGE:?RUNTIME_IMAGE is required}"
 : "${CONTEXT_PATH:?CONTEXT_PATH is required}"
 : "${REQUIREMENTS_LOCK_PATH:?REQUIREMENTS_LOCK_PATH is required}"
@@ -15,24 +18,33 @@ SOURCE_DIR="${WORKSPACE_DIR}/source/${CONTEXT_PATH}"
 BUILD_CONTEXT="${WORKSPACE_DIR}/build-context"
 LOCK_FILE="${SOURCE_DIR}/${REQUIREMENTS_LOCK_PATH}"
 
+# requirements.lock is mandatory because package versions must be reproducible.
 if [ ! -f "${LOCK_FILE}" ]; then
   echo "requirements lock file is required: ${LOCK_FILE}" >&2
   exit 1
 fi
 
+# Keep the lock file simple: comments, blanks, and exact pins like package==1.2.3.
 if grep -Ev '^[[:space:]]*($|#|[A-Za-z0-9_.-]+==[^=<>!~ ]+)$' "${LOCK_FILE}"; then
   echo "requirements.lock must pin exact versions only" >&2
   exit 1
 fi
 
+# Rebuild the context from the selected source path only.
 rm -rf "${BUILD_CONTEXT}"
 mkdir -p "${BUILD_CONTEXT}"
 cp -R "${SOURCE_DIR}/." "${BUILD_CONTEXT}/"
+
+# Normalize the lock file name so the generated Dockerfile can always use
+# /requirements.lock even when the user provided a nested lock file path.
 cp "${LOCK_FILE}" "${BUILD_CONTEXT}/requirements.lock"
 
+# Store the lock hash in the workflow result for audit and rebuild tracking.
 sha256sum "${LOCK_FILE}" | awk '{print $1}' > /tmp/lock-hash.txt
 
 ENTRYPOINT_ARGS="${ENTRYPOINT_ARGS:-}"
+
+# Convert the user's entrypoint choice into one shell command used by Docker CMD.
 case "${ENTRYPOINT_TYPE}" in
   module)
     START_COMMAND="python -m ${ENTRYPOINT_VALUE} ${ENTRYPOINT_ARGS}"
@@ -52,6 +64,8 @@ case "${ENTRYPOINT_TYPE}" in
     ;;
 esac
 
+# The generated Dockerfile intentionally has only 6 conceptual layers:
+# 1 base, 2 runtime policy, 3 lock copy, 4 package install, 5 source copy, 6 run config.
 cat > "${BUILD_CONTEXT}/Dockerfile" <<EOF
 # 1. Golden Image Layer: Python / OS / CUDA / CA policy comes from approved base digest
 FROM ${RUNTIME_IMAGE}

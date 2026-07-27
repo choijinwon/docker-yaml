@@ -1,5 +1,9 @@
 set -euo pipefail
 
+# Create the final build report artifact.
+# This file is the small audit record that says exactly what source, base image,
+# lock hash, and pushed image digest were used.
+
 : "${REPOSITORY_NAME:?REPOSITORY_NAME is required}"
 : "${GIT_REVISION:?GIT_REVISION is required}"
 : "${CONTEXT_PATH:?CONTEXT_PATH is required}"
@@ -13,6 +17,7 @@ WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 OUTPUT_DIR="${WORKSPACE_DIR}/output"
 mkdir -p "${OUTPUT_DIR}"
 
+# Argo stores this file as the build-report artifact.
 cat > "${OUTPUT_DIR}/build-report.json" <<EOF
 {
   "workflowName": "${WORKFLOW_NAME:-}",
