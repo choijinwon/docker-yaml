@@ -41,6 +41,8 @@
 
 ## 6단계 Docker Layer
 
+![B300 CUDA 공식 기준 요약](nvidia-b300-cuda-reference.svg)
+
 | 단계 | Dockerfile 영역 | 목적 |
 | --- | --- | --- |
 | 1 | Golden Image Layer | Python, OS, CUDA, CA 정책을 승인된 Base Digest에서 상속 |

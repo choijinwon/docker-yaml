@@ -30,6 +30,7 @@
 - [requirements.lock 정책](docs/requirements-lock-policy.md)
 - [Golden Image Catalog](docs/golden-image-catalog.md)
 - [보고용 아키텍처 이미지](docs/python-image-builder-architecture.png)
+- [B300 CUDA 공식 기준 요약 이미지](docs/nvidia-b300-cuda-reference.svg)
 - [관리자 Golden Image Workflow](workflows/admin-golden-image-builder.yaml)
 - [사용자 Application Image Workflow](workflows/user-application-image-builder.yaml)
 - [6단계 Docker Layer Image Build Workflow](workflows/python-image-build-6-layer.yaml)

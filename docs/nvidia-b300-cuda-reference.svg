@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" role="img" aria-labelledby="title desc">
+  <title id="title">NVIDIA B300 CUDA Reference</title>
+  <desc id="desc">B300 GPU image build reference for Blackwell, CUDA 12.8 or newer, and minimum Linux driver 570.26 for CUDA 12.8 GA.</desc>
+  <rect width="1400" height="820" fill="#f6f8fb"/>
+
+  <rect x="48" y="38" width="1304" height="112" rx="18" fill="#0b1f4d"/>
+  <text x="86" y="88" fill="#ffffff" font-family="Arial, sans-serif" font-size="34" font-weight="700">B300 GPU Python Image Build Reference</text>
+  <text x="86" y="124" fill="#c8d7ff" font-family="Arial, sans-serif" font-size="20">Blackwell GPU requires a CUDA-capable Golden Image, not a plain Ubuntu base image.</text>
+
+  <rect x="66" y="194" width="380" height="188" rx="14" fill="#ffffff" stroke="#c8d1df"/>
+  <text x="94" y="234" fill="#0b1f4d" font-family="Arial, sans-serif" font-size="24" font-weight="700">Architecture</text>
+  <text x="94" y="282" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">GPU Model: B300</text>
+  <text x="94" y="322" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">Architecture: Blackwell</text>
+  <text x="94" y="362" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">First CUDA Support: 12.8</text>
+
+  <rect x="510" y="194" width="380" height="188" rx="14" fill="#ffffff" stroke="#c8d1df"/>
+  <text x="538" y="234" fill="#0b1f4d" font-family="Arial, sans-serif" font-size="24" font-weight="700">CUDA Runtime</text>
+  <text x="538" y="282" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">Recommended Floor: CUDA 12.8+</text>
+  <text x="538" y="322" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">CUDA 12.x Driver Range: 525 - &lt;580</text>
+  <text x="538" y="362" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">CUDA 13.x Driver Range: 580+</text>
+
+  <rect x="954" y="194" width="380" height="188" rx="14" fill="#ffffff" stroke="#c8d1df"/>
+  <text x="982" y="234" fill="#0b1f4d" font-family="Arial, sans-serif" font-size="24" font-weight="700">Driver Baseline</text>
+  <text x="982" y="282" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">CUDA 12.8 GA Linux Driver</text>
+  <text x="982" y="322" fill="#166534" font-family="Arial, sans-serif" font-size="30" font-weight="700">&gt;= 570.26</text>
+  <text x="982" y="362" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">Use newer certified driver if available</text>
+
+  <path d="M446 288 H510" stroke="#0b1f4d" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M890 288 H954" stroke="#0b1f4d" stroke-width="5" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#0b1f4d"/>
+    </marker>
+  </defs>
+
+  <rect x="66" y="430" width="1268" height="190" rx="14" fill="#ffffff" stroke="#c8d1df"/>
+  <text x="94" y="474" fill="#0b1f4d" font-family="Arial, sans-serif" font-size="25" font-weight="700">Golden Image Rule</text>
+  <text x="94" y="522" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">1. Mirror an NVIDIA CUDA/cuDNN/NCCL base image into internal Harbor.</text>
+  <text x="94" y="562" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">2. Build Python Golden Image from repository@sha256 digest, not a mutable tag.</text>
+  <text x="94" y="602" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="22">3. Register Catalog record with accelerator=cuda, gpuModel=b300, gpuArchitecture=blackwell.</text>
+
+  <rect x="66" y="660" width="1268" height="94" rx="14" fill="#eef6ff" stroke="#b8d8ff"/>
+  <text x="94" y="696" fill="#0b1f4d" font-family="Arial, sans-serif" font-size="20" font-weight="700">Sources</text>
+  <text x="94" y="728" fill="#1b2b4b" font-family="Arial, sans-serif" font-size="18">NVIDIA CUDA Toolkit, Driver, and Architecture Matrix / NVIDIA CUDA Toolkit Release Notes</text>
+</svg>
