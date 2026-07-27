@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: golden-image-catalog
+data:
+  golden-image-catalog.json: |
+    [
+      {
+        "uuid": "py311-cpu-ubuntu2204-20260727",
+        "status": "active",
+        "runtime": {
+          "python": "3.11.9",
+          "os": "ubuntu",
+          "osVersion": "22.04",
+          "accelerator": "cpu"
+        },
+        "image": {
+          "repository": "harbor.local/platform/python-golden",
+          "tag": "py311-cpu-ubuntu2204",
+          "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "createdAt": "2026-07-27T00:00:00+09:00",
+        "owner": "platform"
+      }
+    ]

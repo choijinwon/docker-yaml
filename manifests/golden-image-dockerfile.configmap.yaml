@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: golden-image-dockerfile
+data:
+  Dockerfile: |
+    ARG BASE_IMAGE=harbor.local/base/ubuntu:22.04
+    FROM ${BASE_IMAGE}
+
+    ARG PYTHON_VERSION=3.11.9
+
+    ENV PIP_NO_INDEX=true
+    ENV PIP_FIND_LINKS=/opt/wheelhouse
+
+    COPY ca/internal-ca.crt /usr/local/share/ca-certificates/internal-ca.crt
+    RUN update-ca-certificates || true
+
+    RUN python3 --version && python3 -m pip --version

@@ -27,7 +27,32 @@
 - [아키텍처](docs/architecture.md)
 - [파라미터 표준](docs/parameter-standard.md)
 - [requirements.lock 정책](docs/requirements-lock-policy.md)
+- [Golden Image Catalog](docs/golden-image-catalog.md)
 - [보고용 아키텍처 이미지](docs/python-image-builder-architecture.png)
+- [관리자 Golden Image Workflow](workflows/admin-golden-image-builder.yaml)
+- [사용자 Application Image Workflow](workflows/user-application-image-builder.yaml)
+
+## 저장소 구조
+
+```text
+docker-yaml/
+├── README.md
+├── docs/
+│   ├── architecture.md
+│   ├── golden-image-catalog.md
+│   ├── parameter-standard.md
+│   ├── python-image-builder-architecture.png
+│   └── requirements-lock-policy.md
+├── examples/
+│   ├── golden-image-catalog.example.json
+│   └── requirements.lock.example
+├── manifests/
+│   ├── golden-image-catalog.configmap.yaml
+│   └── golden-image-dockerfile.configmap.yaml
+└── workflows/
+    ├── admin-golden-image-builder.yaml
+    └── user-application-image-builder.yaml
+```
 
 ## 운영 분리
 
@@ -45,3 +70,10 @@ Application Image
 - 사용자 전용 패키지
 - Shell / Entrypoint
 ```
+
+## 사용 흐름
+
+1. 관리자가 `workflows/admin-golden-image-builder.yaml`로 Golden Image를 빌드합니다.
+2. 빌드 결과는 Harbor `repository@digest`로 고정하고 Catalog에 UUID와 함께 등록합니다.
+3. 사용자는 Golden Image UUID와 Git 소스, `requirements.lock`, 실행 명령만 제출합니다.
+4. `workflows/user-application-image-builder.yaml`가 Catalog를 조회해 Golden Image Digest 기반으로 애플리케이션 이미지를 만듭니다.

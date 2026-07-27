@@ -1,0 +1,106 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: admin-golden-image-builder
+spec:
+  entrypoint: build-golden-image
+  serviceAccountName: argo-workflow
+  arguments:
+    parameters:
+      - name: golden_image_uuid
+      - name: python_version
+        value: "3.11.9"
+      - name: os_family
+        value: ubuntu
+      - name: os_version
+        value: "22.04"
+      - name: accelerator
+        value: cpu
+      - name: base_image
+        value: harbor.local/base/ubuntu:22.04
+      - name: output_repository
+        value: harbor.local/platform/python-golden
+      - name: output_tag
+        value: py311-cpu-ubuntu2204
+  templates:
+    - name: build-golden-image
+      steps:
+        - - name: validate-parameters
+            template: validate-parameters
+        - - name: build-image
+            template: build-image
+        - - name: smoke-test
+            template: smoke-test
+        - - name: write-catalog-record
+            template: write-catalog-record
+
+    - name: validate-parameters
+      script:
+        image: harbor.local/platform/python:3.11
+        command: [python]
+        source: |
+          import re
+          uuid = "{{workflow.parameters.golden_image_uuid}}"
+          if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{2,127}", uuid):
+              raise SystemExit(f"invalid golden_image_uuid: {uuid}")
+          accelerator = "{{workflow.parameters.accelerator}}"
+          if accelerator not in {"cpu", "cuda"}:
+              raise SystemExit(f"invalid accelerator: {accelerator}")
+
+    - name: build-image
+      container:
+        image: harbor.local/platform/kaniko-executor:latest
+        args:
+          - --dockerfile=/workspace/Dockerfile
+          - --context=dir:///workspace
+          - --destination={{workflow.parameters.output_repository}}:{{workflow.parameters.output_tag}}
+          - --digest-file=/tmp/digest
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+      outputs:
+        parameters:
+          - name: image_digest
+            valueFrom:
+              path: /tmp/digest
+
+    - name: smoke-test
+      container:
+        image: "{{workflow.parameters.output_repository}}:{{workflow.parameters.output_tag}}"
+        command: [sh, -c]
+        args:
+          - |
+            python --version
+            python -m pip --version
+
+    - name: write-catalog-record
+      script:
+        image: harbor.local/platform/python:3.11
+        command: [python]
+        source: |
+          import json
+          from datetime import datetime, timezone, timedelta
+
+          record = {
+              "uuid": "{{workflow.parameters.golden_image_uuid}}",
+              "status": "active",
+              "runtime": {
+                  "python": "{{workflow.parameters.python_version}}",
+                  "os": "{{workflow.parameters.os_family}}",
+                  "osVersion": "{{workflow.parameters.os_version}}",
+                  "accelerator": "{{workflow.parameters.accelerator}}",
+              },
+              "image": {
+                  "repository": "{{workflow.parameters.output_repository}}",
+                  "tag": "{{workflow.parameters.output_tag}}",
+                  "digest": "{{steps.build-image.outputs.parameters.image_digest}}",
+              },
+              "createdAt": datetime.now(timezone(timedelta(hours=9))).isoformat(),
+              "owner": "platform",
+          }
+          print(json.dumps(record, ensure_ascii=False, indent=2))
+
+  volumes:
+    - name: workspace
+      configMap:
+        name: golden-image-dockerfile
