@@ -1,0 +1,16 @@
+generatorOptions:
+  disableNameSuffixHash: true
+
+resources:
+  - manifests/golden-image-catalog.configmap.yaml
+  - manifests/golden-image-dockerfile.configmap.yaml
+
+configMapGenerator:
+  - name: python-image-builder-scripts
+    files:
+      - scripts/image-builder/validate_input.py
+      - scripts/image-builder/resolve_golden_image.py
+      - scripts/image-builder/fetch_source.sh
+      - scripts/image-builder/create_6_layer_dockerfile.sh
+      - scripts/image-builder/build_and_push_image.sh
+      - scripts/image-builder/write_result.sh

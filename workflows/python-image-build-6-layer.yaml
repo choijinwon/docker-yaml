@@ -1,0 +1,432 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: python-image-build-6-layer
+  namespace: argo
+  labels:
+    workflows.argoproj.io/creator: system-serviceaccount-argo-argo-server
+    app.kubernetes.io/name: python-image-builder
+    app.kubernetes.io/part-of: image-build-standard
+spec:
+  entrypoint: main
+  serviceAccountName: argo-kserver
+  parallelism: 6
+  arguments:
+    parameters:
+      - name: bitbucket-address-user-code
+        value: ssh://git@bitbucket.CHANGE_ME/project/sample-app.git
+      - name: git-revision
+        value: main
+      - name: context-path
+        value: "."
+      - name: requirements-lock-path
+        value: requirements.lock
+      - name: golden-image-uuid
+        value: ""
+      - name: runtime-image
+        value: harbor.CHANGE_ME.internal/runtime/python311@sha256:CHANGE_ME_64_HEX_DIGEST
+      - name: nexus-pypi-url
+        value: https://nexus.CHANGE_ME.internal/repository/pypi-group/simple
+      - name: registry-address
+        value: harbor.CHANGE_ME.internal
+      - name: registry-project
+        value: applications
+      - name: cache-registry-address
+        value: harbor.CHANGE_ME.internal/build-cache
+      - name: buildkit-address
+        value: tcp://buildkitd.buildkit.svc.cluster.local:1234
+      - name: image-tag
+        value: latest
+      - name: image-name
+        value: ""
+      - name: shell-type
+        value: bash
+      - name: entrypoint-type
+        value: module
+      - name: entrypoint-value
+        value: src.api
+      - name: entrypoint-args
+        value: ""
+      - name: working-directory
+        value: /app
+      - name: run-as-user
+        value: "10001"
+      - name: environment-profile
+        value: production
+
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes:
+          - ReadWriteMany
+        storageClassName: CHANGE_ME-rwx-storage
+        resources:
+          requests:
+            storage: 20Gi
+
+  volumes:
+    - name: registry-auth
+      secret:
+        secretName: harbor-registry-auth
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+    - name: bitbucket-ssh
+      secret:
+        secretName: bitbucket-ssh-key
+        defaultMode: 0400
+    - name: golden-image-catalog
+      configMap:
+        name: golden-image-catalog
+        optional: true
+    - name: image-builder-scripts
+      configMap:
+        name: python-image-builder-scripts
+        defaultMode: 0555
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: step-1-validate-input
+            template: validate-input
+            arguments:
+              parameters:
+                - name: repository-url
+                  value: "{{workflow.parameters.bitbucket-address-user-code}}"
+                - name: git-revision
+                  value: "{{workflow.parameters.git-revision}}"
+                - name: context-path
+                  value: "{{workflow.parameters.context-path}}"
+                - name: requirements-lock-path
+                  value: "{{workflow.parameters.requirements-lock-path}}"
+                - name: image-name
+                  value: "{{workflow.parameters.image-name}}"
+                - name: shell-type
+                  value: "{{workflow.parameters.shell-type}}"
+                - name: entrypoint-type
+                  value: "{{workflow.parameters.entrypoint-type}}"
+                - name: entrypoint-value
+                  value: "{{workflow.parameters.entrypoint-value}}"
+                - name: working-directory
+                  value: "{{workflow.parameters.working-directory}}"
+                - name: run-as-user
+                  value: "{{workflow.parameters.run-as-user}}"
+                - name: environment-profile
+                  value: "{{workflow.parameters.environment-profile}}"
+
+          - name: step-2-resolve-golden-image
+            template: resolve-golden-image
+            arguments:
+              parameters:
+                - name: golden-image-uuid
+                  value: "{{workflow.parameters.golden-image-uuid}}"
+                - name: runtime-image
+                  value: "{{workflow.parameters.runtime-image}}"
+
+          - name: step-3-fetch-source
+            depends: step-1-validate-input.Succeeded
+            template: fetch-source
+            arguments:
+              parameters:
+                - name: repository-url
+                  value: "{{workflow.parameters.bitbucket-address-user-code}}"
+                - name: git-revision
+                  value: "{{workflow.parameters.git-revision}}"
+
+          - name: step-4-create-6-layer-dockerfile
+            depends: step-2-resolve-golden-image.Succeeded && step-3-fetch-source.Succeeded
+            template: create-6-layer-dockerfile
+            arguments:
+              parameters:
+                - name: runtime-image
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
+                - name: nexus-pypi-url
+                  value: "{{workflow.parameters.nexus-pypi-url}}"
+                - name: context-path
+                  value: "{{workflow.parameters.context-path}}"
+                - name: requirements-lock-path
+                  value: "{{workflow.parameters.requirements-lock-path}}"
+                - name: shell-type
+                  value: "{{workflow.parameters.shell-type}}"
+                - name: entrypoint-type
+                  value: "{{workflow.parameters.entrypoint-type}}"
+                - name: entrypoint-value
+                  value: "{{workflow.parameters.entrypoint-value}}"
+                - name: entrypoint-args
+                  value: "{{workflow.parameters.entrypoint-args}}"
+                - name: working-directory
+                  value: "{{workflow.parameters.working-directory}}"
+                - name: run-as-user
+                  value: "{{workflow.parameters.run-as-user}}"
+                - name: environment-profile
+                  value: "{{workflow.parameters.environment-profile}}"
+
+          - name: step-5-build-and-push-image
+            depends: step-4-create-6-layer-dockerfile.Succeeded
+            template: build-and-push-image
+            arguments:
+              parameters:
+                - name: repository-name
+                  value: "{{tasks.step-1-validate-input.outputs.parameters.repository-name}}"
+                - name: image-name
+                  value: "{{workflow.parameters.image-name}}"
+                - name: runtime-image
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
+                - name: buildkit-address
+                  value: "{{workflow.parameters.buildkit-address}}"
+                - name: registry-address
+                  value: "{{workflow.parameters.registry-address}}"
+                - name: registry-project
+                  value: "{{workflow.parameters.registry-project}}"
+                - name: cache-registry-address
+                  value: "{{workflow.parameters.cache-registry-address}}"
+                - name: image-tag
+                  value: "{{workflow.parameters.image-tag}}"
+
+          - name: step-6-write-result
+            depends: step-5-build-and-push-image.Succeeded
+            template: write-result
+            arguments:
+              parameters:
+                - name: repository-name
+                  value: "{{tasks.step-1-validate-input.outputs.parameters.repository-name}}"
+                - name: git-revision
+                  value: "{{workflow.parameters.git-revision}}"
+                - name: context-path
+                  value: "{{workflow.parameters.context-path}}"
+                - name: requirements-lock-path
+                  value: "{{workflow.parameters.requirements-lock-path}}"
+                - name: runtime-image
+                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
+                - name: lock-hash
+                  value: "{{tasks.step-4-create-6-layer-dockerfile.outputs.parameters.lock-hash}}"
+                - name: image-reference
+                  value: "{{tasks.step-5-build-and-push-image.outputs.parameters.image-reference}}"
+                - name: image-digest
+                  value: "{{tasks.step-5-build-and-push-image.outputs.parameters.image-digest}}"
+
+    - name: validate-input
+      inputs:
+        parameters:
+          - name: repository-url
+          - name: git-revision
+          - name: context-path
+          - name: requirements-lock-path
+          - name: image-name
+          - name: shell-type
+          - name: entrypoint-type
+          - name: entrypoint-value
+          - name: working-directory
+          - name: run-as-user
+          - name: environment-profile
+      outputs:
+        parameters:
+          - name: repository-name
+            valueFrom:
+              path: /tmp/repository-name.txt
+      script:
+        image: harbor.CHANGE_ME.internal/platform/python-build-tools:1.0.0@sha256:CHANGE_ME
+        command: [sh]
+        source: |
+          export REPOSITORY_URL="{{inputs.parameters.repository-url}}"
+          export GIT_REVISION="{{inputs.parameters.git-revision}}"
+          export CONTEXT_PATH="{{inputs.parameters.context-path}}"
+          export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
+          export IMAGE_NAME="{{inputs.parameters.image-name}}"
+          export SHELL_TYPE="{{inputs.parameters.shell-type}}"
+          export ENTRYPOINT_TYPE="{{inputs.parameters.entrypoint-type}}"
+          export ENTRYPOINT_VALUE="{{inputs.parameters.entrypoint-value}}"
+          export WORKING_DIRECTORY="{{inputs.parameters.working-directory}}"
+          export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
+          export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
+          python /opt/image-builder/scripts/validate_input.py
+        volumeMounts:
+          - name: image-builder-scripts
+            mountPath: /opt/image-builder/scripts
+            readOnly: true
+
+    - name: resolve-golden-image
+      inputs:
+        parameters:
+          - name: golden-image-uuid
+          - name: runtime-image
+      outputs:
+        parameters:
+          - name: runtime-image
+            valueFrom:
+              path: /tmp/runtime-image.txt
+          - name: parent-image-digest
+            valueFrom:
+              path: /tmp/parent-image-digest.txt
+      script:
+        image: harbor.CHANGE_ME.internal/platform/python-build-tools:1.0.0@sha256:CHANGE_ME
+        command: [sh]
+        source: |
+          export GOLDEN_IMAGE_UUID="{{inputs.parameters.golden-image-uuid}}"
+          export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
+          export CATALOG_PATH=/catalog/golden-image-catalog.json
+          python /opt/image-builder/scripts/resolve_golden_image.py
+        volumeMounts:
+          - name: image-builder-scripts
+            mountPath: /opt/image-builder/scripts
+            readOnly: true
+          - name: golden-image-catalog
+            mountPath: /catalog
+            readOnly: true
+
+    - name: fetch-source
+      inputs:
+        parameters:
+          - name: repository-url
+          - name: git-revision
+      container:
+        image: alpine/git:2.49.1
+        command: [sh, -c]
+        args:
+          - |
+            export REPOSITORY_URL="{{inputs.parameters.repository-url}}"
+            export GIT_REVISION="{{inputs.parameters.git-revision}}"
+            export WORKSPACE_DIR=/workspace
+            sh /opt/image-builder/scripts/fetch_source.sh
+        volumeMounts:
+          - name: image-builder-scripts
+            mountPath: /opt/image-builder/scripts
+            readOnly: true
+          - name: workspace
+            mountPath: /workspace
+          - name: bitbucket-ssh
+            mountPath: /root/.ssh
+            readOnly: true
+
+    - name: create-6-layer-dockerfile
+      inputs:
+        parameters:
+          - name: runtime-image
+          - name: nexus-pypi-url
+          - name: context-path
+          - name: requirements-lock-path
+          - name: shell-type
+          - name: entrypoint-type
+          - name: entrypoint-value
+          - name: entrypoint-args
+          - name: working-directory
+          - name: run-as-user
+          - name: environment-profile
+      outputs:
+        parameters:
+          - name: lock-hash
+            valueFrom:
+              path: /tmp/lock-hash.txt
+      script:
+        image: harbor.CHANGE_ME.internal/platform/python-build-tools:1.0.0@sha256:CHANGE_ME
+        command: [sh]
+        source: |
+          export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
+          export CONTEXT_PATH="{{inputs.parameters.context-path}}"
+          export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
+          export SHELL_TYPE="{{inputs.parameters.shell-type}}"
+          export ENTRYPOINT_TYPE="{{inputs.parameters.entrypoint-type}}"
+          export ENTRYPOINT_VALUE="{{inputs.parameters.entrypoint-value}}"
+          export ENTRYPOINT_ARGS="{{inputs.parameters.entrypoint-args}}"
+          export WORKING_DIRECTORY="{{inputs.parameters.working-directory}}"
+          export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
+          export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
+          export WORKSPACE_DIR=/workspace
+          sh /opt/image-builder/scripts/create_6_layer_dockerfile.sh
+        volumeMounts:
+          - name: image-builder-scripts
+            mountPath: /opt/image-builder/scripts
+            readOnly: true
+          - name: workspace
+            mountPath: /workspace
+
+    - name: build-and-push-image
+      inputs:
+        parameters:
+          - name: repository-name
+          - name: image-name
+          - name: runtime-image
+          - name: buildkit-address
+          - name: registry-address
+          - name: registry-project
+          - name: cache-registry-address
+          - name: image-tag
+      outputs:
+        parameters:
+          - name: image-reference
+            valueFrom:
+              path: /tmp/image-reference.txt
+          - name: image-digest
+            valueFrom:
+              path: /tmp/image-digest.txt
+      script:
+        image: harbor.CHANGE_ME.internal/platform/buildkit-client-tools:1.0.0@sha256:CHANGE_ME
+        command: [sh]
+        source: |
+          export REPOSITORY_NAME="{{inputs.parameters.repository-name}}"
+          export IMAGE_NAME="{{inputs.parameters.image-name}}"
+          export BUILDKIT_ADDRESS="{{inputs.parameters.buildkit-address}}"
+          export REGISTRY_ADDRESS="{{inputs.parameters.registry-address}}"
+          export REGISTRY_PROJECT="{{inputs.parameters.registry-project}}"
+          export CACHE_REGISTRY_ADDRESS="{{inputs.parameters.cache-registry-address}}"
+          export IMAGE_TAG="{{inputs.parameters.image-tag}}"
+          export NEXUS_PYPI_URL="{{workflow.parameters.nexus-pypi-url}}"
+          export WORKSPACE_DIR=/workspace
+          sh /opt/image-builder/scripts/build_and_push_image.sh
+        volumeMounts:
+          - name: image-builder-scripts
+            mountPath: /opt/image-builder/scripts
+            readOnly: true
+          - name: workspace
+            mountPath: /workspace
+          - name: registry-auth
+            mountPath: /root/.docker
+            readOnly: true
+      retryStrategy:
+        limit: "2"
+        retryPolicy: OnError
+        backoff:
+          duration: 10s
+          factor: 2
+          maxDuration: 2m
+
+    - name: write-result
+      inputs:
+        parameters:
+          - name: repository-name
+          - name: git-revision
+          - name: context-path
+          - name: requirements-lock-path
+          - name: runtime-image
+          - name: lock-hash
+          - name: image-reference
+          - name: image-digest
+      outputs:
+        artifacts:
+          - name: build-report
+            path: /workspace/output/build-report.json
+      script:
+        image: alpine:3.22
+        command: [sh]
+        source: |
+          export WORKFLOW_NAME="{{workflow.name}}"
+          export WORKFLOW_UID="{{workflow.uid}}"
+          export WORKFLOW_NAMESPACE="{{workflow.namespace}}"
+          export REPOSITORY_NAME="{{inputs.parameters.repository-name}}"
+          export GIT_REVISION="{{inputs.parameters.git-revision}}"
+          export CONTEXT_PATH="{{inputs.parameters.context-path}}"
+          export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
+          export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
+          export LOCK_HASH="{{inputs.parameters.lock-hash}}"
+          export IMAGE_REFERENCE="{{inputs.parameters.image-reference}}"
+          export IMAGE_DIGEST="{{inputs.parameters.image-digest}}"
+          export WORKSPACE_DIR=/workspace
+          sh /opt/image-builder/scripts/write_result.sh
+        volumeMounts:
+          - name: image-builder-scripts
+            mountPath: /opt/image-builder/scripts
+            readOnly: true
+          - name: workspace
+            mountPath: /workspace

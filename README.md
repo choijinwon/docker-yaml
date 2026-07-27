@@ -31,6 +31,8 @@
 - [보고용 아키텍처 이미지](docs/python-image-builder-architecture.png)
 - [관리자 Golden Image Workflow](workflows/admin-golden-image-builder.yaml)
 - [사용자 Application Image Workflow](workflows/user-application-image-builder.yaml)
+- [6단계 Docker Layer Image Build Workflow](workflows/python-image-build-6-layer.yaml)
+- [운영형 Workflow 개선 포인트](docs/operational-workflow-improvement.md)
 
 ## 저장소 구조
 
@@ -49,8 +51,18 @@ docker-yaml/
 ├── manifests/
 │   ├── golden-image-catalog.configmap.yaml
 │   └── golden-image-dockerfile.configmap.yaml
+├── kustomization.yaml
+├── scripts/
+│   └── image-builder/
+│       ├── build_and_push_image.sh
+│       ├── create_6_layer_dockerfile.sh
+│       ├── fetch_source.sh
+│       ├── resolve_golden_image.py
+│       ├── validate_input.py
+│       └── write_result.sh
 └── workflows/
     ├── admin-golden-image-builder.yaml
+    ├── python-image-build-6-layer.yaml
     └── user-application-image-builder.yaml
 ```
 
@@ -77,3 +89,14 @@ Application Image
 2. 빌드 결과는 Harbor `repository@digest`로 고정하고 Catalog에 UUID와 함께 등록합니다.
 3. 사용자는 Golden Image UUID와 Git 소스, `requirements.lock`, 실행 명령만 제출합니다.
 4. `workflows/user-application-image-builder.yaml`가 Catalog를 조회해 Golden Image Digest 기반으로 애플리케이션 이미지를 만듭니다.
+
+## 6단계 Workflow 적용
+
+`workflows/python-image-build-6-layer.yaml`는 인라인 스크립트 대신 `scripts/image-builder/`의 분리된 스크립트를 호출합니다.
+
+```text
+kubectl apply -k .
+kubectl apply -f workflows/python-image-build-6-layer.yaml
+```
+
+`kustomization.yaml`은 `scripts/image-builder/` 파일을 `python-image-builder-scripts` ConfigMap으로 생성합니다.

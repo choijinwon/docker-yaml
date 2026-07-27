@@ -26,9 +26,16 @@
 | `git_revision` | Y | `main`, `v1.2.0`, commit SHA | 체크아웃할 Revision |
 | `context_path` | Y | `.` | Docker Build Context 또는 소스 경로 |
 | `requirements_lock_path` | Y | `requirements.lock` | 고정 의존성 파일 경로 |
-| `entrypoint` | N | `python app.py` | 컨테이너 실행 명령 |
+| `image_name` | N | `sample-api` | Harbor에 Push할 이미지명. 비우면 Git Repository 이름 사용 |
 | `output_repository` | Y | `harbor.local/apps/service` | 애플리케이션 이미지 저장소 |
 | `output_tag` | Y | `20260727-001` | 애플리케이션 이미지 태그 |
+| `shell_type` | Y | `bash`, `sh` | 실행 Shell 종류 |
+| `entrypoint_type` | Y | `module`, `script`, `binary`, `shell` | Entrypoint 해석 방식 |
+| `entrypoint_value` | Y | `src.api`, `app.py` | 실행 대상 |
+| `entrypoint_args` | N | `--port 8080` | 실행 인자 |
+| `working_directory` | N | `/app` | 컨테이너 작업 디렉토리 |
+| `run_as_user` | N | `10001` | 컨테이너 실행 사용자 UID |
+| `environment_profile` | N | `production` | 환경 프로파일 |
 
 ## 파라미터 규칙
 
@@ -37,4 +44,6 @@
 - Workflow는 Catalog에서 `repository@digest`를 조회합니다.
 - `git_revision`은 운영 배포 시 commit SHA 또는 불변 태그 사용을 권장합니다.
 - `requirements.lock`이 없으면 빌드를 실패 처리합니다.
-- `entrypoint`가 비어 있으면 Golden Image 기본 Entrypoint를 사용합니다.
+- `entrypoint_type`과 `entrypoint_value`는 필수입니다.
+- `context_path`와 `requirements_lock_path`는 상대 경로만 허용합니다.
+- `run_as_user`는 숫자 UID를 사용합니다.
