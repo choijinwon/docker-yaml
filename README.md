@@ -17,6 +17,7 @@
 
 - [아키텍처 이미지](docs/images/python-image-build-architecture.png)
 - [이미지 빌드 표준 구조](docs/images/image-build-standard-structure.png)
+- [이미지 빌드 표준 구조 설명 가이드](docs/image-build-standard-structure-explanation.md)
 - [Golden Image 빌드 아키텍처 이미지](docs/images/golden-image-build-architecture.png)
 - [아키텍처 이미지 설명 가이드](docs/architecture-image-explanation.md)
 - [Golden Image 아키텍처 설명 가이드](docs/golden-image-architecture-explanation.md)
@@ -45,6 +46,7 @@ docker-yaml/
 │   ├── golden-image-catalog.md
 │   ├── architecture-image-explanation.md
 │   ├── golden-image-architecture-explanation.md
+│   ├── image-build-standard-structure-explanation.md
 │   ├── explanation-guide.md
 │   ├── nvidia-b300-cuda-reference.svg
 │   ├── operational-workflow-improvement.md
