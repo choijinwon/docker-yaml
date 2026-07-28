@@ -8,6 +8,117 @@
 
 관리자는 승인된 Runtime Environment를 Golden Image로 만들고, Harbor Digest와 GPU/CUDA/Python 호환 정보를 Golden Image Catalog에 등록합니다.
 
+## 쉬운 설명 버전
+
+```text
+Golden Image는 사용자가 직접 만드는 이미지가 아니라,
+관리자가 미리 만들어 두는 표준 실행 환경입니다.
+
+사용자는 나중에 이 Golden Image를 골라서 자기 애플리케이션 이미지를 만듭니다.
+그래서 Golden Image에는 사용자 소스 코드가 들어가지 않습니다.
+
+관리자는 먼저 어떤 Python 버전, 어떤 CUDA 버전, 어떤 GPU 기준을 쓸지 정합니다.
+그리고 시작 이미지인 Base Image를 Digest로 고정합니다.
+
+그 다음 Argo Workflow가 입력값을 검사하고,
+Golden Image용 Dockerfile을 자동으로 만듭니다.
+
+BuildKit은 그 Dockerfile을 실제 이미지로 빌드하고,
+완성된 이미지를 Harbor에 올립니다.
+
+마지막으로 Harbor에 올라간 이미지의 Digest와 UUID를
+Golden Image Catalog에 등록합니다.
+
+사용자는 이후 Catalog에 APPROVED 상태로 등록된 Golden Image만 선택합니다.
+```
+
+## 발표용 간략 문장
+
+```text
+이 구조는 폐쇄망에서 사용할 표준 실행 환경인 Golden Image를 만드는 관리자용 구조입니다.
+
+관리자는 UI에서 Python, CUDA, GPU, Base Image, Docker Tag 같은 기준 정보를 입력합니다.
+Base Image는 반드시 repository@sha256:digest 형식으로 고정하고, latest 태그는 사용하지 않습니다.
+
+Argo Workflow는 입력값을 검증한 뒤 Golden Image용 Dockerfile을 자동 생성합니다.
+이 Dockerfile에는 OS/CA 정책, Python Runtime 도구, GPU 호환 정보, 실행 사용자 기준이 포함됩니다.
+
+BuildKit은 이 Dockerfile을 빌드하고 결과 이미지를 Harbor에 Push합니다.
+빌드가 끝나면 이미지 Digest와 Runtime 정보를 Golden Image Catalog에 등록합니다.
+
+사용자는 이후 이 Catalog에서 APPROVED 상태의 Golden Image만 선택해 Application Image를 빌드합니다.
+```
+
+## 관리자 Workflow를 쉽게 보면
+
+관리자 Workflow는 복잡해 보이지만 실제 흐름은 4단계입니다.
+
+| 단계 | Argo Task | 쉬운 설명 |
+| --- | --- | --- |
+| 1 | `step-1-validate-golden-input` | 관리자가 입력한 값이 운영 기준에 맞는지 확인합니다. |
+| 2 | `step-2-create-golden-5-layer-dockerfile` | Golden Image를 만들 Dockerfile을 자동 생성합니다. |
+| 3 | `step-3-build-and-push-golden-image` | BuildKit으로 이미지를 빌드하고 Harbor에 Push합니다. |
+| 4 | `step-4-write-golden-result` | 빌드 결과를 JSON 리포트로 남깁니다. |
+
+현업 설명에서는 이렇게 말하면 됩니다.
+
+```text
+관리자가 UI에 값을 입력하면 Argo가 먼저 입력값을 검사합니다.
+검사가 통과되면 Dockerfile을 만들고, BuildKit이 이미지를 빌드합니다.
+빌드가 끝나면 Harbor에 이미지를 올리고, 결과 리포트를 남깁니다.
+이 리포트를 기준으로 Golden Image Catalog에 UUID와 Digest를 등록합니다.
+```
+
+## 관리자 스크립트별 쉬운 설명
+
+관리자 스크립트는 `scripts/admin/`에 있습니다.
+Workflow YAML 안에 긴 명령을 직접 넣지 않기 위해 스크립트로 분리한 것입니다.
+
+| 스크립트 | 언제 실행되나 | 쉬운 역할 |
+| --- | --- | --- |
+| `validate_golden_input.py` | 1단계 | 관리자 입력값을 검사합니다. 예를 들어 `base-image`가 Digest 형식인지, GPU면 CUDA/Driver 기준이 있는지 확인합니다. |
+| `create_golden_5_layer_dockerfile.sh` | 2단계 | Golden Image 5 Layer 기준에 맞춰 Dockerfile을 만듭니다. OS/CA, Runtime Tooling, Python/Framework, GPU Metadata, Runtime User 기준을 넣습니다. |
+| `build_and_push_image.sh` | 3단계 | 생성된 Dockerfile을 Remote BuildKit으로 빌드하고 Harbor에 Push합니다. 빌드 결과에서 Image Digest도 추출합니다. |
+| `write_golden_result.sh` | 4단계 | 어떤 값으로 어떤 이미지가 만들어졌는지 `golden-build-report.json`으로 기록합니다. |
+
+주의할 점은 `scripts/admin/` 안에 사용자 이미지 빌드용 스크립트도 같이 있다는 점입니다.
+Golden Image 관리자 Workflow에서 직접 쓰는 핵심 스크립트는 위 4개입니다.
+
+## 현재 구현 기준과 확장 기준
+
+현재 최소 구현에서는 Golden Image가 다음 기준을 먼저 고정합니다.
+
+```text
+Base Image Digest
+OS Version
+Architecture
+CPU/GPU 여부
+CUDA/cuDNN/NCCL/Driver 메타데이터
+pip, setuptools, wheel 같은 Python 기본 도구
+실행 사용자 UID
+작업 디렉터리
+Harbor Tag와 Digest
+```
+
+`torch-version`은 관리자 UI에서 받을 수 있는 확장 항목입니다.
+다만 현재 스크립트는 torch를 직접 설치하는 단계까지는 강제하지 않습니다.
+운영에서 torch를 Golden Image에 포함하기로 결정하면 다음 중 하나로 확장할 수 있습니다.
+
+```text
+1. Base Image에 torch가 포함된 이미지를 사용
+2. create_golden_5_layer_dockerfile.sh에서 Nexus PyPI를 통해 torch wheel 설치 추가
+3. Golden Image Catalog에 torch-version을 메타데이터로 기록
+```
+
+현업에는 이렇게 설명하면 됩니다.
+
+```text
+현재 구조는 Golden Image의 OS, CUDA, Python 기본 도구, GPU 호환성 기준을 먼저 고정합니다.
+torch 같은 Framework는 운영 정책에 따라 Golden Image에 포함할 수도 있고,
+사용자 requirements.lock에서 관리할 수도 있습니다.
+중요한 것은 외부 PyPI가 아니라 내부 Nexus 기준으로만 설치한다는 점입니다.
+```
+
 ## 전체 설명 스크립트
 
 ```text
