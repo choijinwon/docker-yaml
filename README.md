@@ -25,7 +25,7 @@
 - [User Image Workflow](workflows/user-image-build.yaml)
 - [운영형 Workflow 개선 포인트](docs/operational-workflow-improvement.md)
 
-![폐쇄망 Python 이미지 빌드 아키텍처](docs/images/python-image-build-architecture.png)
+![폐쇄망 이미지 빌드 아키텍처](docs/images/python-image-build-architecture.png)
 
 ## 필요한 구조
 

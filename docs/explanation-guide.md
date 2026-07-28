@@ -12,7 +12,7 @@
 
 이 구조에서는 사용자가 Base Image를 직접 고르지 않습니다. 운영에서 승인한 Golden Image UUID만 선택하고, Workflow가 Catalog에서 해당 UUID를 Harbor `repository@sha256:digest`로 변환해 빌드합니다.
 
-![폐쇄망 Python 이미지 빌드 아키텍처](images/python-image-build-architecture.png)
+![폐쇄망 이미지 빌드 아키텍처](images/python-image-build-architecture.png)
 
 ## 전체 흐름
 

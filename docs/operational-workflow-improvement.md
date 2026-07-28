@@ -2,7 +2,7 @@
 
 첨부된 운영 Workflow 문법을 기준으로, 폐쇄망 Python Image Builder를 빠르게 적용할 수 있도록 Golden Image Base와 User Image 5 Layer 구조로 축소한 개선 방향입니다.
 
-![폐쇄망 Python 이미지 빌드 아키텍처](images/python-image-build-architecture.png)
+![폐쇄망 이미지 빌드 아키텍처](images/python-image-build-architecture.png)
 
 ## 반영한 운영 문법
 
