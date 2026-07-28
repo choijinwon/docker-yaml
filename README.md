@@ -16,6 +16,7 @@
 ## 문서
 
 - [아키텍처 이미지](docs/images/python-image-build-architecture.png)
+- [Golden Image 빌드 아키텍처 이미지](docs/images/golden-image-build-architecture.png)
 - [아키텍처 이미지 설명 가이드](docs/architecture-image-explanation.md)
 - [파라미터 표준](docs/parameter-standard.md)
 - [사용자 UI 입력 가이드](docs/user-ui-guide.md)
@@ -27,6 +28,8 @@
 - [운영형 Workflow 개선 포인트](docs/operational-workflow-improvement.md)
 
 ![폐쇄망 이미지 빌드 아키텍처](docs/images/python-image-build-architecture.png)
+
+![폐쇄망 Golden Image 빌드 아키텍처](docs/images/golden-image-build-architecture.png)
 
 ## 필요한 구조
 
@@ -43,6 +46,7 @@ docker-yaml/
 │   ├── parameter-standard.md
 │   ├── user-ui-guide.md
 │   └── images/
+│       ├── golden-image-build-architecture.png
 │       └── python-image-build-architecture.png
 ├── manifests/
 │   ├── golden-image-catalog.configmap.yaml
