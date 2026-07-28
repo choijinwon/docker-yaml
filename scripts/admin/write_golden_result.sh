@@ -46,13 +46,13 @@ cat > "${OUTPUT_DIR}/golden-build-report.json" <<EOF
     "imageReference": "${IMAGE_REFERENCE}",
     "digest": "${IMAGE_DIGEST}"
   },
+  "baseImagePolicy": "approved-base-image",
   "dockerLayerPolicy": [
-    "1-base-image",
-    "2-os-ca-policy",
-    "3-runtime-tooling",
+    "1-os-ca-policy",
+    "2-runtime-tooling",
+    "3-python-framework",
     "4-runtime-metadata",
-    "5-runtime-user",
-    "6-golden-image-contract"
+    "5-runtime-user-contract"
   ],
   "status": "SUCCEEDED",
   "timestamp": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"

@@ -37,7 +37,7 @@
 | `scripts/admin/validate_input.py` | `prepare-build-context` | 입력 파라미터 검증 및 Repository 이름 추출 |
 | `scripts/admin/resolve_golden_image.py` | `prepare-build-context` | Golden Image UUID를 Runtime Image Digest로 확정 |
 | `scripts/admin/fetch_source.sh` | `prepare-build-context` | Git Clone 및 Branch/Commit 체크아웃 |
-| `scripts/admin/create_6_layer_dockerfile.sh` | `prepare-build-context` | Lock 검증, Build Context 생성, User Image 4 Layer Dockerfile 생성 |
+| `scripts/admin/create_user_4_layer_dockerfile.sh` | `prepare-build-context` | Lock 검증, Build Context 생성, User Image 4 Layer Dockerfile 생성 |
 | `scripts/admin/build_and_push_image.sh` | `build-and-push-image` | BuildKit Build/Push 및 Digest 추출 |
 | `scripts/admin/write_result.sh` | `write-result` | 빌드 결과 JSON 생성 |
 

@@ -135,9 +135,9 @@ spec:
                 - name: environment-profile
                   value: "{{workflow.parameters.environment-profile}}"
 
-          - name: step-2-create-golden-6-layer-dockerfile
+          - name: step-2-create-golden-5-layer-dockerfile
             depends: step-1-validate-golden-input.Succeeded
-            template: create-golden-6-layer-dockerfile
+            template: create-golden-5-layer-dockerfile
             arguments:
               parameters:
                 - name: image-type
@@ -184,7 +184,7 @@ spec:
                   value: "{{workflow.parameters.environment-profile}}"
 
           - name: step-3-build-and-push-golden-image
-            depends: step-2-create-golden-6-layer-dockerfile.Succeeded
+            depends: step-2-create-golden-5-layer-dockerfile.Succeeded
             template: build-and-push-golden-image
             arguments:
               parameters:
@@ -295,7 +295,7 @@ spec:
             mountPath: /opt/admin/scripts
             readOnly: true
 
-    - name: create-golden-6-layer-dockerfile
+    - name: create-golden-5-layer-dockerfile
       inputs:
         parameters:
           - name: image-type
@@ -350,7 +350,7 @@ spec:
           export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
           export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
           export WORKSPACE_DIR=/workspace
-          sh /opt/admin/scripts/create_golden_6_layer_dockerfile.sh
+          sh /opt/admin/scripts/create_golden_5_layer_dockerfile.sh
         volumeMounts:
           - name: admin-scripts
             mountPath: /opt/admin/scripts

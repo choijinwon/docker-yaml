@@ -12,8 +12,8 @@ configMapGenerator:
       - scripts/admin/validate_golden_input.py
       - scripts/admin/resolve_golden_image.py
       - scripts/admin/fetch_source.sh
-      - scripts/admin/create_6_layer_dockerfile.sh
-      - scripts/admin/create_golden_6_layer_dockerfile.sh
+      - scripts/admin/create_user_4_layer_dockerfile.sh
+      - scripts/admin/create_golden_5_layer_dockerfile.sh
       - scripts/admin/build_and_push_image.sh
       - scripts/admin/write_result.sh
       - scripts/admin/write_golden_result.sh

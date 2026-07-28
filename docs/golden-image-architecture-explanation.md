@@ -91,6 +91,7 @@ Admin Argo Workflow
 
 Golden Image는 사용자 애플리케이션 코드가 들어가는 이미지가 아닙니다.
 사용자 이미지가 상속할 표준 Runtime Base를 만드는 이미지입니다.
+관리자 Golden Image는 Approved Base Image 위에 5개 Runtime Layer를 추가하는 기준으로 설명합니다.
 
 | 순서 | 레이어 | 목적 |
 | --- | --- | --- |

@@ -70,8 +70,8 @@ docker-yaml/
 │   │   └── submit_cpu_build.sh
 │   └── admin/
 │       ├── build_and_push_image.sh
-│       ├── create_6_layer_dockerfile.sh
-│       ├── create_golden_6_layer_dockerfile.sh
+│       ├── create_user_4_layer_dockerfile.sh
+│       ├── create_golden_5_layer_dockerfile.sh
 │       ├── fetch_source.sh
 │       ├── resolve_golden_image.py
 │       ├── validate_input.py

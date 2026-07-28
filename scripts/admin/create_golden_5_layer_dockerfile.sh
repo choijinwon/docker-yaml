@@ -1,6 +1,6 @@
 set -euo pipefail
 
-# Generate the 6-layer Dockerfile for an admin-managed Golden Image.
+# Generate the Golden Image 5-layer Dockerfile.
 # This workflow creates the approved base runtime image used later by user builds.
 
 : "${IMAGE_TYPE:?IMAGE_TYPE is required}"
@@ -55,14 +55,15 @@ cat > "${BUILD_CONTEXT}/golden-image-metadata.json" <<EOF
 }
 EOF
 
-# The generated Dockerfile intentionally has only 6 conceptual layers:
-# 1 base, 2 OS/CA policy, 3 Python tools, 4 GPU runtime metadata, 5 runtime user, 6 labels.
+# The generated Dockerfile treats the approved base image as the starting point
+# and adds 5 Golden Image layers: OS/CA policy, runtime tooling,
+# Python/framework, runtime metadata, and runtime user/contract.
 cat > "${BUILD_CONTEXT}/Dockerfile" <<EOF
-# 1. Base Image Layer: immutable upstream/internal base image.
+# Base. Approved Base Image: immutable upstream/internal base image.
 #    B300 must start from a Blackwell-capable CUDA base, not plain Ubuntu.
 FROM ${BASE_IMAGE}
 
-# 2. OS / CA Policy Layer: install shared runtime tools from the internal mirror.
+# 1. OS / CA Policy Layer: install shared runtime tools from the internal mirror.
 ARG APT_MIRROR_URL
 RUN if [ -n "\${APT_MIRROR_URL}" ]; then \
       sed -i "s#http://archive.ubuntu.com/ubuntu#\${APT_MIRROR_URL}#g" /etc/apt/sources.list || true; \
@@ -71,11 +72,11 @@ RUN if [ -n "\${APT_MIRROR_URL}" ]; then \
     apt-get install -y --no-install-recommends ${COMMON_OS_PACKAGES}; \
     rm -rf /var/lib/apt/lists/*
 
-# 3. Python Tool Layer: prepare pip tooling through the Nexus internal PyPI endpoint.
+# 2. Runtime Tooling Layer: prepare pip tooling through the Nexus internal PyPI endpoint.
 ARG NEXUS_PYPI_URL
 RUN python3 -m pip install --index-url "\${NEXUS_PYPI_URL}" --upgrade pip setuptools wheel
 
-# 4. Runtime Metadata Layer: record CPU/GPU compatibility contract.
+# 3. Python / Framework Layer: record selected runtime versions.
 ENV IMAGE_TYPE=${IMAGE_TYPE}
 ENV GOLDEN_IMAGE_UUID=${GOLDEN_IMAGE_UUID}
 ENV PYTHON_VERSION=${PYTHON_VERSION}
@@ -93,7 +94,9 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES}
 COPY golden-image-metadata.json /etc/golden-image-metadata.json
 
-# 5. Runtime User Layer: create the common runtime directory and non-root UID.
+# 4. GPU Runtime Metadata Layer: GPU/CUDA/driver contract is recorded above.
+
+# 5. Runtime User / Contract Layer: runtime UID, labels, and default command.
 WORKDIR ${WORKING_DIRECTORY}
 RUN mkdir -p ${WORKING_DIRECTORY}; \
     if ! id -u ${RUN_AS_USER} >/dev/null 2>&1; then \
@@ -101,7 +104,6 @@ RUN mkdir -p ${WORKING_DIRECTORY}; \
     fi; \
     chown -R ${RUN_AS_USER}:0 ${WORKING_DIRECTORY}
 
-# 6. Golden Image Contract Layer: labels and default command.
 ENV ENVIRONMENT_PROFILE=${ENVIRONMENT_PROFILE}
 LABEL image.type="${IMAGE_TYPE}"
 LABEL golden.image.uuid="${GOLDEN_IMAGE_UUID}"
