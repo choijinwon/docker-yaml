@@ -12,6 +12,8 @@
 
 이 구조에서는 사용자가 Base Image를 직접 고르지 않습니다. 운영에서 승인한 Golden Image UUID만 선택하고, Workflow가 Catalog에서 해당 UUID를 Harbor `repository@sha256:digest`로 변환해 빌드합니다.
 
+![폐쇄망 Python 이미지 빌드 아키텍처](images/python-image-build-architecture.png)
+
 ## 전체 흐름
 
 ```text
@@ -20,7 +22,7 @@ Golden Image Catalog
   -> Harbor repository@sha256:digest 조회
   -> Git 소스 Clone
   -> requirements.lock 검증
-  -> 6단계 Dockerfile 생성
+  -> User Image 5 Layer Dockerfile 생성
   -> BuildKit Build/Push
   -> build-report.json 생성
 ```
@@ -129,18 +131,16 @@ B300은 일반 Ubuntu 이미지만으로는 운영 기준을 만족하기 어렵
 - CUDA 12.8 GA 기준 Linux NVIDIA Driver 최소 버전은 570.26입니다.
 - 따라서 B300용 Golden Image는 Ubuntu 단독 이미지가 아니라 CUDA/cuDNN/NCCL이 포함된 NVIDIA CUDA 계열 이미지를 내부 Harbor에 미러링해서 사용해야 합니다.
 
-## 6단계 Docker Layer
+## User Image 5 Layer
 
-Golden Image와 User Image는 둘 다 6레이어로 관리합니다.
-
-둘 다 운영에서 재현성과 추적성이 필요하기 때문입니다. 다만 목적은 다릅니다.
+User Image는 Golden Image를 첫 번째 레이어로 다시 세는 방식이 아니라, 승인된 Golden Image를 Base로 두고 그 위에 사용자 애플리케이션용 5개 레이어를 추가하는 방식으로 설명합니다.
 
 ```text
-Golden Image 6레이어
+Golden Image Base
 - 운영자가 CPU/GPU 기준 런타임을 만드는 구조
 - OS, CUDA, Python, 공통 도구, 보안 정책, 기본 실행 사용자 기준을 고정
 
-User Image 6레이어
+User Image 5 Layer
 - 사용자가 실제 애플리케이션 이미지를 만드는 구조
 - 승인된 Golden Image 위에 requirements.lock, 패키지, 소스, Entrypoint를 고정
 ```
@@ -148,56 +148,34 @@ User Image 6레이어
 현업 설명용으로는 이렇게 말하면 됩니다.
 
 ```text
-Golden Image는 운영 표준 런타임을 6레이어로 만들고,
-User Image는 그 표준 런타임 위에 애플리케이션을 6레이어로 올립니다.
-그래서 둘 다 6레이어지만 관리 목적이 다릅니다.
+Golden Image는 운영 표준 런타임이고,
+User Image는 그 표준 런타임 위에 애플리케이션을 5 Layer로 올립니다.
+그래서 Golden Image는 Base, User Image는 5 Layer로 구분해서 설명합니다.
 ```
 
-User Image 6레이어:
+User Image 5 Layer:
 
 ```text
-1. Golden Image Layer
+Base. Golden Image Base
    승인된 CPU/GPU Golden Image Digest 사용
 
-2. Runtime Policy Layer
+1. Runtime Policy Layer
    WORKDIR, Python/Pip, GPU Runtime 환경 설정
 
-3. Dependency Lock Layer
+2. Dependency Lock Layer
    requirements.lock 먼저 복사
 
-4. Python Package Layer
+3. Python Package Layer
    Nexus/internal PyPI에서 고정 버전 설치
 
-5. Application Source Layer
+4. Application Source Layer
    사용자 소스 복사
 
-6. Execution Config Layer
+5. Execution Config Layer
    Shell/Entrypoint/User 설정 적용
 ```
 
 이 순서로 나눈 이유는 `requirements.lock`이 바뀌지 않으면 패키지 설치 레이어 캐시를 재사용하기 위해서입니다.
-
-Golden Image 6레이어:
-
-```text
-1. Base Image Layer
-   Ubuntu 또는 NVIDIA CUDA Base Image Digest 사용
-
-2. OS / CA Policy Layer
-   사내 APT Mirror, CA, 공통 OS 패키지 적용
-
-3. Runtime Tooling Layer
-   Python, pip, setuptools, wheel 등 기본 도구 준비
-
-4. Runtime Metadata Layer
-   CPU/GPU, CUDA, Driver, GPU 모델 기준 기록
-
-5. Runtime User Layer
-   작업 디렉토리와 non-root UID 기준 적용
-
-6. Golden Image Contract Layer
-   Label, 기본 CMD, Catalog 등록용 계약 정보 적용
-```
 
 ## 운영자 역할
 

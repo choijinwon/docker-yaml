@@ -42,13 +42,13 @@ cat > "${OUTPUT_DIR}/build-report.json" <<EOF
   "lockHash": "${LOCK_HASH}",
   "imageReference": "${IMAGE_REFERENCE}",
   "imageDigest": "${IMAGE_DIGEST}",
+  "baseImagePolicy": "approved-golden-image",
   "dockerLayerPolicy": [
-    "1-golden-image",
-    "2-runtime-policy",
-    "3-dependency-lock",
-    "4-package-install",
-    "5-application-source",
-    "6-execution-config"
+    "1-runtime-policy",
+    "2-dependency-lock",
+    "3-package-install",
+    "4-application-source",
+    "5-execution-config"
   ],
   "status": "SUCCEEDED",
   "timestamp": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"

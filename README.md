@@ -15,14 +15,17 @@
 
 ## 문서
 
+- [아키텍처 이미지](docs/images/python-image-build-architecture.png)
 - [파라미터 표준](docs/parameter-standard.md)
 - [사용자 UI 입력 가이드](docs/user-ui-guide.md)
 - [Golden Image Catalog](docs/golden-image-catalog.md)
 - [현업 설명 가이드](docs/explanation-guide.md)
 - [B300 CUDA 공식 기준 요약 이미지](docs/nvidia-b300-cuda-reference.svg)
-- [Golden Image 6단계 Workflow](workflows/golden-image-build.yaml)
-- [User Image 6단계 Workflow](workflows/user-image-build.yaml)
+- [Golden Image Workflow](workflows/golden-image-build.yaml)
+- [User Image Workflow](workflows/user-image-build.yaml)
 - [운영형 Workflow 개선 포인트](docs/operational-workflow-improvement.md)
+
+![폐쇄망 Python 이미지 빌드 아키텍처](docs/images/python-image-build-architecture.png)
 
 ## 필요한 구조
 
@@ -37,6 +40,8 @@ docker-yaml/
 │   ├── operational-workflow-improvement.md
 │   ├── parameter-standard.md
 │   ├── user-ui-guide.md
+│   └── images/
+│       └── python-image-build-architecture.png
 ├── manifests/
 │   ├── golden-image-catalog.configmap.yaml
 │   ├── user-image-ui-schema.configmap.yaml
@@ -45,6 +50,7 @@ docker-yaml/
 ├── scripts/
 │   ├── user/
 │   │   ├── submit_b300_build.sh
+│   │   ├── submit_gpu_build.sh
 │   │   └── submit_cpu_build.sh
 │   └── admin/
 │       ├── build_and_push_image.sh
@@ -75,19 +81,21 @@ kubectl apply -k .
 kubectl apply -f workflows/golden-image-build.yaml
 kubectl apply -f workflows/user-image-build.yaml
 kubectl create -f manifests/run-cpu.workflow.yaml
-kubectl create -f manifests/run-b300.workflow.yaml
+kubectl create -f manifests/run-gpu.workflow.yaml
 ```
 
-`manifests/run-cpu.workflow.yaml`와 `manifests/run-b300.workflow.yaml`는 사용자 제출 예시입니다. 다른 GPU는 Catalog에 Golden Image Record를 추가하고, 사용자 실행 manifest에서는 `golden-image-uuid`만 해당 UUID로 바꾸면 됩니다.
+`manifests/run-cpu.workflow.yaml`와 `manifests/run-gpu.workflow.yaml`는 사용자 제출 예시입니다. 다른 GPU는 Catalog에 Golden Image Record를 추가하고, 사용자 실행 manifest에서는 `golden-image-uuid`만 해당 UUID로 바꾸면 됩니다.
 
 사용자는 스크립트로 제출할 수도 있습니다.
 
 ```text
 GIT_URL=ssh://git@bitbucket.local/project/app.git \
+USER_ID=jiwon.choi \
 IMAGE_NAME=my-app-cpu \
 scripts/user/submit_cpu_build.sh
 
 GIT_URL=ssh://git@bitbucket.local/project/app.git \
+USER_ID=jiwon.choi \
 IMAGE_NAME=my-app-b300 \
 scripts/user/submit_b300_build.sh
 ```
@@ -97,6 +105,7 @@ scripts/user/submit_b300_build.sh
 ```text
 DRY_RUN=true \
 GIT_URL=ssh://git@bitbucket.local/project/app.git \
+USER_ID=jiwon.choi \
 scripts/user/submit_cpu_build.sh
 ```
 
