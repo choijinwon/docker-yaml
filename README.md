@@ -22,6 +22,7 @@
 - [아키텍처 이미지 설명 가이드](docs/architecture-image-explanation.md)
 - [Golden Image 아키텍처 설명 가이드](docs/golden-image-architecture-explanation.md)
 - [의사결정사항](docs/decision-record.md)
+- [용어 정리 가이드](docs/terminology-guide.md)
 - [파라미터 표준](docs/parameter-standard.md)
 - [사용자 UI 입력 가이드](docs/user-ui-guide.md)
 - [Golden Image Catalog](docs/golden-image-catalog.md)
@@ -53,6 +54,7 @@ docker-yaml/
 │   ├── nvidia-b300-cuda-reference.svg
 │   ├── operational-workflow-improvement.md
 │   ├── parameter-standard.md
+│   ├── terminology-guide.md
 │   ├── user-ui-guide.md
 │   └── images/
 │       ├── golden-image-build-architecture.png
