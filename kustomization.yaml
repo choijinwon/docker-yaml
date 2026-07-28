@@ -2,8 +2,7 @@ generatorOptions:
   disableNameSuffixHash: true
 
 resources:
-  - manifests/golden-image-catalog.configmap.yaml
-  - manifests/user-image-ui-schema.configmap.yaml
+  - manifests/core
 
 configMapGenerator:
   - name: admin-scripts

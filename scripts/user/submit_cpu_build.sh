@@ -2,7 +2,7 @@ set -euo pipefail
 
 # Submit a CPU application image build.
 # Required: GIT_URL
-# Optional examples: GIT_REVISION, IMAGE_NAME, IMAGE_TAG, ENTRYPOINT_VALUE
+# Optional parameters: GIT_REVISION, IMAGE_NAME, IMAGE_TAG, ENTRYPOINT_VALUE
 
 NAMESPACE="${NAMESPACE:-argo}"
 DRY_RUN="${DRY_RUN:-false}"

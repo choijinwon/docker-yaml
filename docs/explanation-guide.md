@@ -36,12 +36,12 @@ workflows/golden-image-build.yaml
 workflows/user-image-build.yaml
 - 사용자가 Application Image를 생성하는 WorkflowTemplate
 
-manifests/golden-image-catalog.configmap.yaml
+manifests/core/golden-image-catalog.configmap.yaml
 - CPU/GPU Golden Image UUID와 Digest 매핑
 
-manifests/run-cpu.workflow.yaml
-manifests/run-gpu.workflow.yaml
-- 사용자가 제출할 GPU 실행 예시. B300뿐 아니라 Golden Image Catalog에 등록된 다른 GPU UUID도 사용 가능
+manifests/services/cpu/run-cpu.workflow.yaml
+manifests/services/gpu/run-gpu.workflow.yaml
+- 실제 서비스 빌드 실행 manifest. B300뿐 아니라 Golden Image Catalog에 등록된 다른 GPU UUID도 사용 가능
 
 scripts/admin/
 - Golden/User Workflow Pod 안에서 실행되는 관리자 빌드 스크립트
@@ -182,7 +182,7 @@ Runtime Policy는 Golden Image Base에서 상속하고, User Image에서는 `req
 ```text
 1. CPU/GPU Golden Image 생성
 2. Harbor에 repository@digest 형태로 Push
-3. golden-image-catalog.configmap.yaml에 UUID와 Digest 등록
+3. manifests/core/golden-image-catalog.configmap.yaml에 UUID와 Digest 등록
 4. GPU가 추가되면 GPU별 Golden Image UUID를 Catalog에 추가
 5. admin-scripts ConfigMap 배포
 6. golden-image-build WorkflowTemplate 등록

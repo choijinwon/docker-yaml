@@ -12,7 +12,11 @@
 | `kustomization.yaml` | 커스터마이제이션 야믈 | Kubernetes 리소스를 한 번에 적용하기 위한 Kustomize 설정 |
 | `docs/` | 독스 | 설명 문서와 아키텍처 이미지 보관 디렉터리 |
 | `docs/images/` | 독스 이미지즈 | 설명용 이미지 파일 보관 디렉터리 |
-| `manifests/` | 매니페스트 | 실제 실행 예시, Catalog, UI Schema 같은 Kubernetes 리소스 보관 디렉터리 |
+| `manifests/` | 매니페스트 | Catalog, UI Schema, 실제 서비스 실행 manifest 같은 Kubernetes 리소스 보관 디렉터리 |
+| `manifests/core/` | 매니페스트 코어 | 공통 기반 리소스 보관 디렉터리 |
+| `manifests/services/` | 매니페스트 서비스즈 | 실제 서비스 빌드 실행 manifest 보관 디렉터리 |
+| `manifests/services/cpu/` | 매니페스트 서비스즈 씨피유 | CPU 서비스 이미지 빌드 실행 manifest 보관 디렉터리 |
+| `manifests/services/gpu/` | 매니페스트 서비스즈 지피유 | GPU 서비스 이미지 빌드 실행 manifest 보관 디렉터리 |
 | `scripts/` | 스크립츠 | Workflow 안에서 실행되는 스크립트 보관 디렉터리 |
 | `scripts/admin/` | 스크립츠 어드민 | 관리자 영역에서 사용하는 검증, Dockerfile 생성, 빌드 결과 기록 스크립트 |
 | `scripts/user/` | 스크립츠 유저 | 사용자가 Workflow 실행 요청을 제출할 때 쓰는 예시 스크립트 |
@@ -45,8 +49,8 @@
    - YAML 안에 긴 명령을 모두 넣지 않고, 검증/소스 가져오기/Dockerfile 생성/빌드 결과 기록을 스크립트로 분리합니다.
 
 5. `manifests/`
-   - Kubernetes에 적용하거나 실행 예시로 사용할 리소스 파일 영역입니다.
-   - Golden Image Catalog, 사용자 UI Schema, CPU/GPU 실행 예시가 여기에 들어갑니다.
+   - Kubernetes에 적용하거나 실제 서비스 빌드 실행에 사용할 리소스 파일 영역입니다.
+   - Golden Image Catalog, 사용자 UI Schema, CPU/GPU 서비스 실행 manifest가 여기에 들어갑니다.
 
 ### 디렉터리별 책임
 
@@ -55,15 +59,16 @@
 | `docs/` | 설명, 의사결정, 아키텍처 공유 | 현업 담당자, 운영자, 개발자 |
 | `workflows/` | Argo에서 실행할 표준 절차 정의 | 플랫폼 운영자, DevOps 담당자 |
 | `scripts/admin/` | 관리자 영역 빌드 처리 로직 | 플랫폼 운영자 |
-| `scripts/user/` | 사용자 제출 예시와 실행 편의 스크립트 | 사용자, 현업 담당자 |
-| `manifests/` | Catalog, UI Schema, 실행 예시 리소스 | 운영자, 시스템 연동 담당자 |
+| `scripts/user/` | 사용자가 서비스 빌드를 제출할 때 쓰는 실행 편의 스크립트 | 사용자, 현업 담당자 |
+| `manifests/core/` | Catalog, UI Schema 같은 공통 리소스 | 운영자, 시스템 연동 담당자 |
+| `manifests/services/` | 실제 서비스 빌드 실행 manifest | 운영자, 서비스 담당자 |
 
 ### 설명할 때 쓰는 쉬운 문장
 
 ```text
 이 프로젝트는 크게 문서, 실행 템플릿, 실행 스크립트, Kubernetes 적용 파일로 나뉩니다.
 docs는 설명 자료이고, workflows는 Argo가 실행할 표준 절차입니다.
-scripts는 Workflow 안에서 실제 일을 하는 처리 로직이고, manifests는 Catalog나 실행 예시처럼 Kubernetes에 적용하는 파일입니다.
+scripts는 Workflow 안에서 실제 일을 하는 처리 로직이고, manifests는 Catalog와 실제 서비스 실행 manifest처럼 Kubernetes에 적용하는 파일입니다.
 ```
 
 ## 핵심 이미지 빌드 용어
@@ -99,7 +104,7 @@ scripts는 Workflow 안에서 실제 일을 하는 처리 로직이고, manifest
 | PVC | 피브이씨 | Pod 간 공유 디스크 요청 | 소스, 생성 파일, 빌드 결과 공유 |
 | Secret | 시크릿 | 비밀번호, 인증키 같은 민감정보 | Git, Harbor, Nexus 인증정보 |
 | ConfigMap | 컨피그맵 | 일반 설정값 보관 리소스 | Golden Image Catalog, UI Schema, 스크립트 배포 |
-| Manifest | 매니페스트 | Kubernetes에 적용하는 YAML/JSON 파일 | 실행 예시, Catalog, ConfigMap 파일 |
+| Manifest | 매니페스트 | Kubernetes에 적용하는 YAML/JSON 파일 | 실제 서비스 실행, Catalog, ConfigMap 파일 |
 
 ## 패키지 / 의존성 용어
 

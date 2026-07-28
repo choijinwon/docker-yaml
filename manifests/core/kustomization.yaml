@@ -1,0 +1,3 @@
+resources:
+  - golden-image-catalog.configmap.yaml
+  - user-image-ui-schema.configmap.yaml

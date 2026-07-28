@@ -89,11 +89,11 @@ User Image 4 Layer:
 
 ## 추천 적용 순서
 
-1. `manifests/golden-image-catalog.configmap.yaml`의 Catalog를 운영 값으로 교체합니다.
+1. `manifests/core/golden-image-catalog.configmap.yaml`의 Catalog를 운영 값으로 교체합니다.
 2. `harbor-registry-auth`, `bitbucket-ssh-key` Secret 이름을 운영 Secret과 맞춥니다.
 3. `kubectl apply -k .`로 `admin-scripts` ConfigMap을 생성합니다.
 4. `workflows/golden-image-build.yaml`와 `workflows/user-image-build.yaml`의 `CHANGE_ME` 값을 운영 주소로 치환합니다.
-5. `manifests/run-cpu.workflow.yaml`, `manifests/run-gpu.workflow.yaml`를 서비스별 값으로 수정합니다.
+5. `manifests/services/cpu/run-cpu.workflow.yaml`, `manifests/services/gpu/run-gpu.workflow.yaml`를 서비스별 값으로 수정합니다.
 6. 또는 `scripts/user/submit_cpu_build.sh`, `scripts/user/submit_gpu_build.sh`에 환경변수를 넘겨 실행합니다.
 7. `entrypoint-type`, `entrypoint-value`, `shell-type`을 서비스별 실행 방식에 맞춥니다.
 8. 먼저 CPU 실행 manifest로 검증하고, GPU는 Catalog/Driver/CUDA 기준 확인 후 실행합니다.

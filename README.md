@@ -61,10 +61,16 @@ docker-yaml/
 │       ├── image-build-standard-structure.png
 │       └── python-image-build-architecture.png
 ├── manifests/
-│   ├── golden-image-catalog.configmap.yaml
-│   ├── user-image-ui-schema.configmap.yaml
-│   ├── run-b300.workflow.yaml
-│   └── run-cpu.workflow.yaml
+│   ├── core/
+│   │   ├── golden-image-catalog.configmap.yaml
+│   │   ├── user-image-ui-schema.configmap.yaml
+│   │   └── kustomization.yaml
+│   └── services/
+│       ├── cpu/
+│       │   └── run-cpu.workflow.yaml
+│       └── gpu/
+│           ├── run-b300.workflow.yaml
+│           └── run-gpu.workflow.yaml
 ├── scripts/
 │   ├── user/
 │   │   ├── submit_b300_build.sh
@@ -91,18 +97,20 @@ docker-yaml/
 2. `workflows/golden-image-build.yaml`를 등록합니다.
 3. `workflows/user-image-build.yaml`를 등록합니다.
 4. 운영자는 Golden Image Workflow로 CPU/GPU 기준 이미지를 생성합니다.
-5. 생성된 Digest를 `manifests/golden-image-catalog.configmap.yaml`에 등록합니다.
-6. 사용자는 User Image Workflow 실행 manifest를 제출합니다.
+5. 생성된 Digest를 `manifests/core/golden-image-catalog.configmap.yaml`에 등록합니다.
+6. 사용자는 서비스별 User Image Workflow 실행 manifest를 제출합니다.
 
 ```text
 kubectl apply -k .
 kubectl apply -f workflows/golden-image-build.yaml
 kubectl apply -f workflows/user-image-build.yaml
-kubectl create -f manifests/run-cpu.workflow.yaml
-kubectl create -f manifests/run-gpu.workflow.yaml
+kubectl create -f manifests/services/cpu/run-cpu.workflow.yaml
+kubectl create -f manifests/services/gpu/run-gpu.workflow.yaml
 ```
 
-`manifests/run-cpu.workflow.yaml`와 `manifests/run-gpu.workflow.yaml`는 사용자 제출 예시입니다. 다른 GPU는 Catalog에 Golden Image Record를 추가하고, 사용자 실행 manifest에서는 `golden-image-uuid`만 해당 UUID로 바꾸면 됩니다.
+`manifests/services/cpu/run-cpu.workflow.yaml`와 `manifests/services/gpu/run-gpu.workflow.yaml`는 실제 서비스 빌드 실행 manifest입니다. 다른 GPU는 Catalog에 Golden Image Record를 추가하고, 서비스 실행 manifest에서는 `golden-image-uuid`만 해당 UUID로 바꾸면 됩니다.
+
+서비스 실행 manifest는 `metadata.generateName`을 사용하므로 반복 실행할 수 있습니다. Kustomize는 `metadata.name`이 없는 실행 Workflow를 묶을 때 실패할 수 있어, 서비스 빌드는 `kubectl create -f`로 명시적으로 실행합니다.
 
 사용자는 스크립트로 제출할 수도 있습니다.
 
