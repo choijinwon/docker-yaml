@@ -1,6 +1,3 @@
-# Explanation Guide
-
-이 문서는 현업 담당자에게 현재 Python Image Builder 구조를 설명할 때 사용하는 가이드입니다.
 
 ## 한 줄 요약
 
