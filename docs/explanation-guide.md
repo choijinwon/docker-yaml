@@ -22,7 +22,7 @@ Golden Image Catalog
   -> Harbor repository@sha256:digest 조회
   -> Git 소스 Clone
   -> requirements.lock 검증
-  -> User Image 5 Layer Dockerfile 생성
+  -> User Image 4 Layer Dockerfile 생성
   -> BuildKit Build/Push
   -> build-report.json 생성
 ```
@@ -131,16 +131,16 @@ B300은 일반 Ubuntu 이미지만으로는 운영 기준을 만족하기 어렵
 - CUDA 12.8 GA 기준 Linux NVIDIA Driver 최소 버전은 570.26입니다.
 - 따라서 B300용 Golden Image는 Ubuntu 단독 이미지가 아니라 CUDA/cuDNN/NCCL이 포함된 NVIDIA CUDA 계열 이미지를 내부 Harbor에 미러링해서 사용해야 합니다.
 
-## User Image 5 Layer
+## User Image 4 Layer
 
-User Image는 Golden Image를 첫 번째 레이어로 다시 세는 방식이 아니라, 승인된 Golden Image를 Base로 두고 그 위에 사용자 애플리케이션용 5개 레이어를 추가하는 방식으로 설명합니다.
+User Image는 Golden Image를 첫 번째 레이어로 다시 세는 방식이 아니라, 승인된 Golden Image를 Base로 두고 그 위에 사용자 애플리케이션용 4개 레이어를 추가하는 방식으로 설명합니다.
 
 ```text
 Golden Image Base
 - 운영자가 CPU/GPU 기준 런타임을 만드는 구조
 - OS, CUDA, Python, 공통 도구, 보안 정책, 기본 실행 사용자 기준을 고정
 
-User Image 5 Layer
+User Image 4 Layer
 - 사용자가 실제 애플리케이션 이미지를 만드는 구조
 - 승인된 Golden Image 위에 requirements.lock, 패키지, 소스, Entrypoint를 고정
 ```
@@ -149,32 +149,30 @@ User Image 5 Layer
 
 ```text
 Golden Image는 운영 표준 런타임이고,
-User Image는 그 표준 런타임 위에 애플리케이션을 5 Layer로 올립니다.
-그래서 Golden Image는 Base, User Image는 5 Layer로 구분해서 설명합니다.
+User Image는 그 표준 런타임 위에 애플리케이션을 4 Layer로 올립니다.
+그래서 Golden Image는 Base, User Image는 4 Layer로 구분해서 설명합니다.
 ```
 
-User Image 5 Layer:
+User Image 4 Layer:
 
 ```text
 Base. Golden Image Base
    승인된 CPU/GPU Golden Image Digest 사용
 
-1. Runtime Policy Layer
-   WORKDIR, Python/Pip, GPU Runtime 환경 설정
-
-2. Dependency Lock Layer
+1. Dependency Lock Layer
    requirements.lock 먼저 복사
 
-3. Python Package Layer
+2. Python Package Layer
    Nexus/internal PyPI에서 고정 버전 설치
 
-4. Application Source Layer
+3. Application Source Layer
    사용자 소스 복사
 
-5. Execution Config Layer
+4. Execution Config Layer
    Shell/Entrypoint/User 설정 적용
 ```
 
+Runtime Policy는 Golden Image Base에서 상속하고, User Image에서는 `requirements.lock`부터 레이어를 나눕니다.
 이 순서로 나눈 이유는 `requirements.lock`이 바뀌지 않으면 패키지 설치 레이어 캐시를 재사용하기 위해서입니다.
 
 ## 운영자 역할

@@ -44,11 +44,10 @@ cat > "${OUTPUT_DIR}/build-report.json" <<EOF
   "imageDigest": "${IMAGE_DIGEST}",
   "baseImagePolicy": "approved-golden-image",
   "dockerLayerPolicy": [
-    "1-runtime-policy",
-    "2-dependency-lock",
-    "3-package-install",
-    "4-application-source",
-    "5-execution-config"
+    "1-dependency-lock",
+    "2-package-install",
+    "3-application-source",
+    "4-execution-config"
   ],
   "status": "SUCCEEDED",
   "timestamp": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"

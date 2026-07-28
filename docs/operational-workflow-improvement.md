@@ -1,6 +1,6 @@
 # Operational Workflow Improvement
 
-첨부된 운영 Workflow 문법을 기준으로, 폐쇄망 Python Image Builder를 빠르게 적용할 수 있도록 Golden Image Base와 User Image 5 Layer 구조로 축소한 개선 방향입니다.
+첨부된 운영 Workflow 문법을 기준으로, 폐쇄망 Python Image Builder를 빠르게 적용할 수 있도록 Golden Image Base와 User Image 4 Layer 구조로 축소한 개선 방향입니다.
 
 ![폐쇄망 이미지 빌드 아키텍처](images/python-image-build-architecture.png)
 
@@ -37,7 +37,7 @@
 | `scripts/admin/validate_input.py` | `prepare-build-context` | 입력 파라미터 검증 및 Repository 이름 추출 |
 | `scripts/admin/resolve_golden_image.py` | `prepare-build-context` | Golden Image UUID를 Runtime Image Digest로 확정 |
 | `scripts/admin/fetch_source.sh` | `prepare-build-context` | Git Clone 및 Branch/Commit 체크아웃 |
-| `scripts/admin/create_6_layer_dockerfile.sh` | `prepare-build-context` | Lock 검증, Build Context 생성, User Image 5 Layer Dockerfile 생성 |
+| `scripts/admin/create_6_layer_dockerfile.sh` | `prepare-build-context` | Lock 검증, Build Context 생성, User Image 4 Layer Dockerfile 생성 |
 | `scripts/admin/build_and_push_image.sh` | `build-and-push-image` | BuildKit Build/Push 및 Digest 추출 |
 | `scripts/admin/write_result.sh` | `write-result` | 빌드 결과 JSON 생성 |
 
@@ -49,27 +49,26 @@
 | `scripts/user/submit_gpu_build.sh` | GPU 실행 manifest에 사용자 값을 채워 Workflow 제출. GPU 종류는 `GOLDEN_IMAGE_UUID`로 선택 |
 | `scripts/user/submit_b300_build.sh` | B300 기본값을 넣어 `submit_gpu_build.sh`를 호출하는 호환용 바로가기 |
 
-## User Image 5 Layer
+## User Image 4 Layer
 
 ![B300 CUDA 공식 기준 요약](nvidia-b300-cuda-reference.svg)
 
-User Image는 승인된 Golden Image를 `FROM repository@sha256:digest` Base로 사용하고, 그 위에 사용자 애플리케이션에 필요한 5개 레이어만 추가합니다.
+User Image는 승인된 Golden Image를 `FROM repository@sha256:digest` Base로 사용하고, 그 위에 사용자 애플리케이션에 필요한 4개 레이어만 추가합니다.
 
 | 구분 | 목적 |
 | --- | --- |
 | Golden Image Base | 운영자가 승인한 CPU/GPU 표준 런타임을 Digest로 고정 |
-| User Image 5 Layer | 승인된 Golden Image 위에 사용자 소스, `requirements.lock`, Entrypoint를 올리는 애플리케이션 이미지 |
+| User Image 4 Layer | 승인된 Golden Image 위에 사용자 소스, `requirements.lock`, Entrypoint를 올리는 애플리케이션 이미지 |
 
-User Image 5 Layer:
+User Image 4 Layer:
 
 | 단계 | Dockerfile 영역 | 목적 |
 | --- | --- | --- |
 | Base | Golden Image Base | Python, OS, CUDA, CA 정책을 승인된 Base Digest에서 상속 |
-| 1 | Runtime Policy Layer | `WORKDIR`, Python/Pip, GPU Runtime 환경 정책 고정 |
-| 2 | Dependency Lock Layer | `requirements.lock`만 먼저 복사해 캐시 효율 확보 |
-| 3 | Python Package Layer | Nexus/내부 PyPI에서 고정 버전 설치 |
-| 4 | Application Source Layer | 사용자 소스 복사 |
-| 5 | Execution Config Layer | Shell/Entrypoint 실행 설정 적용 |
+| 1 | Dependency Lock Layer | `requirements.lock`만 먼저 복사해 캐시 효율 확보 |
+| 2 | Python Package Layer | Nexus/내부 PyPI에서 고정 버전 설치 |
+| 3 | Application Source Layer | 사용자 소스 복사 |
+| 4 | Execution Config Layer | Shell/Entrypoint 실행 설정 적용 |
 
 ## 개선한 점
 

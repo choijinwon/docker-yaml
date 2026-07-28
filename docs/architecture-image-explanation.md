@@ -6,7 +6,7 @@
 
 ## 한 줄 요약
 
-사용자는 빌드 대상만 입력하고, 실행 환경은 Golden Image Catalog에서 가져오며, BuildKit이 5 Layer 구조로 이미지를 빌드해 Harbor에 Digest 기준으로 저장합니다.
+사용자는 빌드 대상만 입력하고, 실행 환경은 Golden Image Catalog에서 가져오며, BuildKit이 4 Layer 구조로 이미지를 빌드해 Harbor에 Digest 기준으로 저장합니다.
 
 ## 전체 설명 스크립트
 
@@ -32,10 +32,9 @@ requirements.lock 기준으로 패키지를 설치할 때 Nexus PyPI를 참조�
 
 Remote BuildKit은 Dockerfile을 빌드합니다.
 이때 User Image는 Golden Image를 Base로 사용하고,
-그 위에 5개 레이어를 쌓습니다.
+그 위에 4개 레이어를 쌓습니다.
 
-5개 레이어는 Runtime Policy, Dependency Lock, Python Package,
-Application Source, Execution Config입니다.
+4개 레이어는 Dependency Lock, Python Package, Application Source, Execution Config입니다.
 requirements.lock을 소스보다 먼저 반영해서 패키지 캐시를 재사용할 수 있게 했습니다.
 
 빌드가 끝나면 Harbor Registry에 Application Image가 Push되고,
@@ -76,25 +75,25 @@ Nexus PyPI
 
 Argo Workflow
   -> Remote BuildKit
-  -> User Image Docker 5 Layer
+  -> User Image Docker 4 Layer
   -> Harbor Registry
   -> 자동 기록 / 조회 항목
 ```
 
-## Docker 5 Layer 설명
+## Docker 4 Layer 설명
 
 User Image는 Golden Image를 첫 번째 레이어로 다시 세지 않습니다.
-Golden Image는 이미 운영에서 승인된 Base로 사용하고, 사용자 이미지에는 아래 5개 레이어를 추가합니다.
+Golden Image는 이미 운영에서 승인된 Base로 사용하고, 사용자 이미지에는 아래 4개 레이어를 추가합니다.
 
 | 순서 | 레이어 | 목적 |
 | --- | --- | --- |
 | Base | Approved Golden Image | OS, Python, CUDA, GPU, 사내 CA 정책을 상속합니다. |
-| 1 | Runtime Policy Layer | 작업 디렉토리, Python 실행 정책, GPU 런타임 환경을 고정합니다. |
-| 2 | Dependency Lock Layer | `requirements.lock`을 먼저 복사해 의존성 기준을 고정합니다. |
-| 3 | Python Package Layer | Nexus PyPI에서 lock 기반으로 패키지를 설치합니다. |
-| 4 | Application Source Layer | 사용자 애플리케이션 소스를 복사합니다. |
-| 5 | Execution Config Layer | Bash Shell, Entrypoint, 실행 UID를 고정합니다. |
+| 1 | Dependency Lock Layer | `requirements.lock`을 먼저 복사해 의존성 기준을 고정합니다. |
+| 2 | Python Package Layer | Nexus PyPI에서 lock 기반으로 패키지를 설치합니다. |
+| 3 | Application Source Layer | 사용자 애플리케이션 소스를 복사합니다. |
+| 4 | Execution Config Layer | Bash Shell, Entrypoint, 실행 UID를 고정합니다. |
 
+Runtime Policy는 Golden Image Base에서 상속하고, User Image는 `requirements.lock`부터 레이어를 나눕니다.
 이 순서를 사용하는 이유는 `requirements.lock`이 바뀌지 않으면 Python Package Layer 캐시를 재사용할 수 있기 때문입니다.
 소스 코드만 바뀐 경우에는 패키지 설치를 다시 하지 않고 빠르게 이미지를 다시 만들 수 있습니다.
 
@@ -133,5 +132,5 @@ Argo Workflow 중간에서 사용자 Shell을 직접 실행하지 않습니다.
 - Base Image는 승인된 Golden Image만 사용합니다.
 - Source Repository와 Golden Image Catalog 조회는 Argo에서 처리합니다.
 - Nexus PyPI는 BuildKit 빌드 중 Python Package Layer에서 사용합니다.
-- User Image는 Golden Image Base 위에 5 Layer 정책으로 관리합니다.
+- User Image는 Golden Image Base 위에 4 Layer 정책으로 관리합니다.
 - 결과는 Harbor Tag와 Digest, Build Report로 추적합니다.
