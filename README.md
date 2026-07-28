@@ -16,6 +16,7 @@
 ## 문서
 
 - [아키텍처 이미지](docs/images/python-image-build-architecture.png)
+- [아키텍처 이미지 설명 가이드](docs/architecture-image-explanation.md)
 - [파라미터 표준](docs/parameter-standard.md)
 - [사용자 UI 입력 가이드](docs/user-ui-guide.md)
 - [Golden Image Catalog](docs/golden-image-catalog.md)
@@ -35,6 +36,7 @@ docker-yaml/
 ├── kustomization.yaml
 ├── docs/
 │   ├── golden-image-catalog.md
+│   ├── architecture-image-explanation.md
 │   ├── explanation-guide.md
 │   ├── nvidia-b300-cuda-reference.svg
 │   ├── operational-workflow-improvement.md
