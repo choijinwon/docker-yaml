@@ -9,6 +9,20 @@ data:
       "description": "Build a user application image from an approved Golden Image.",
       "groups": [
         {
+          "id": "requester",
+          "label": "Requester",
+          "fields": [
+            {
+              "name": "user-id",
+              "label": "User ID",
+              "type": "text",
+              "required": true,
+              "placeholder": "jiwon.choi",
+              "helpText": "빌드 요청자 ID입니다. 빌드 리포트와 감사 기록에 남습니다."
+            }
+          ]
+        },
+        {
           "id": "golden-image",
           "label": "Golden Image",
           "fields": [
@@ -17,7 +31,7 @@ data:
               "label": "Golden Image",
               "type": "select",
               "required": true,
-              "helpText": "운영에서 배포한 Golden Image UUID를 선택합니다. Base Image, GPU, CUDA, Driver 값은 직접 입력하지 않습니다."
+              "helpText": "운영에서 배포한 CPU 또는 GPU Golden Image UUID를 선택합니다. Base Image, GPU, CUDA, Driver 값은 직접 입력하지 않습니다."
             }
           ]
         },
@@ -85,7 +99,7 @@ data:
               "label": "Image Tag",
               "type": "text",
               "required": true,
-              "default": "latest"
+              "default": "20260728-001"
             }
           ]
         },

@@ -11,11 +11,13 @@ metadata:
 spec:
   entrypoint: main
   serviceAccountName: argo-kserver
-  parallelism: 6
+  parallelism: 4
   arguments:
     parameters:
       - name: image-type
         value: user
+      - name: user-id
+        value: ""
       - name: bitbucket-address-user-code
         value: ssh://git@bitbucket.CHANGE_ME/project/sample-app.git
       - name: git-revision
@@ -37,7 +39,7 @@ spec:
       - name: buildkit-address
         value: tcp://buildkitd.buildkit.svc.cluster.local:1234
       - name: image-tag
-        value: latest
+        value: 20260728-001
       - name: image-name
         value: ""
       - name: shell-type
@@ -54,6 +56,8 @@ spec:
         value: "10001"
       - name: environment-profile
         value: production
+      - name: notification-server-url
+        value: ""
 
   volumeClaimTemplates:
     - metadata:
@@ -89,12 +93,14 @@ spec:
     - name: main
       dag:
         tasks:
-          - name: step-1-validate-input
-            template: validate-input
+          - name: prepare-build-context
+            template: prepare-build-context
             arguments:
               parameters:
                 - name: image-type
                   value: "{{workflow.parameters.image-type}}"
+                - name: user-id
+                  value: "{{workflow.parameters.user-id}}"
                 - name: repository-url
                   value: "{{workflow.parameters.bitbucket-address-user-code}}"
                 - name: git-revision
@@ -103,67 +109,10 @@ spec:
                   value: "{{workflow.parameters.context-path}}"
                 - name: requirements-lock-path
                   value: "{{workflow.parameters.requirements-lock-path}}"
-                - name: image-name
-                  value: "{{workflow.parameters.image-name}}"
-                - name: shell-type
-                  value: "{{workflow.parameters.shell-type}}"
-                - name: entrypoint-type
-                  value: "{{workflow.parameters.entrypoint-type}}"
-                - name: entrypoint-value
-                  value: "{{workflow.parameters.entrypoint-value}}"
-                - name: working-directory
-                  value: "{{workflow.parameters.working-directory}}"
-                - name: run-as-user
-                  value: "{{workflow.parameters.run-as-user}}"
-                - name: environment-profile
-                  value: "{{workflow.parameters.environment-profile}}"
-
-          - name: step-2-resolve-golden-image
-            template: resolve-golden-image
-            arguments:
-              parameters:
                 - name: golden-image-uuid
                   value: "{{workflow.parameters.golden-image-uuid}}"
-
-          - name: step-3-fetch-source
-            depends: step-1-validate-input.Succeeded
-            template: fetch-source
-            arguments:
-              parameters:
-                - name: repository-url
-                  value: "{{workflow.parameters.bitbucket-address-user-code}}"
-                - name: git-revision
-                  value: "{{workflow.parameters.git-revision}}"
-
-          - name: step-4-create-6-layer-dockerfile
-            depends: step-2-resolve-golden-image.Succeeded && step-3-fetch-source.Succeeded
-            template: create-6-layer-dockerfile
-            arguments:
-              parameters:
-                - name: image-type
-                  value: "{{workflow.parameters.image-type}}"
-                - name: runtime-image
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
-                - name: nexus-pypi-url
-                  value: "{{workflow.parameters.nexus-pypi-url}}"
-                - name: context-path
-                  value: "{{workflow.parameters.context-path}}"
-                - name: requirements-lock-path
-                  value: "{{workflow.parameters.requirements-lock-path}}"
-                - name: accelerator
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.accelerator}}"
-                - name: architecture
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.architecture}}"
-                - name: gpu-model
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.gpu-model}}"
-                - name: gpu-architecture
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.gpu-architecture}}"
-                - name: cuda-version
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.cuda-version}}"
-                - name: minimum-driver-version
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.minimum-driver-version}}"
-                - name: nvidia-driver-capabilities
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.nvidia-driver-capabilities}}"
+                - name: image-name
+                  value: "{{workflow.parameters.image-name}}"
                 - name: shell-type
                   value: "{{workflow.parameters.shell-type}}"
                 - name: entrypoint-type
@@ -179,13 +128,13 @@ spec:
                 - name: environment-profile
                   value: "{{workflow.parameters.environment-profile}}"
 
-          - name: step-5-build-and-push-image
-            depends: step-4-create-6-layer-dockerfile.Succeeded
+          - name: build-and-push-image
+            depends: prepare-build-context.Succeeded
             template: build-and-push-image
             arguments:
               parameters:
                 - name: repository-name
-                  value: "{{tasks.step-1-validate-input.outputs.parameters.repository-name}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.repository-name}}"
                 - name: image-name
                   value: "{{workflow.parameters.image-name}}"
                 - name: buildkit-address
@@ -198,16 +147,20 @@ spec:
                   value: "{{workflow.parameters.cache-registry-address}}"
                 - name: image-tag
                   value: "{{workflow.parameters.image-tag}}"
+                - name: nexus-pypi-url
+                  value: "{{workflow.parameters.nexus-pypi-url}}"
 
-          - name: step-6-write-result
-            depends: step-5-build-and-push-image.Succeeded
+          - name: write-result
+            depends: build-and-push-image.Succeeded
             template: write-result
             arguments:
               parameters:
                 - name: image-type
                   value: "{{workflow.parameters.image-type}}"
+                - name: user-id
+                  value: "{{workflow.parameters.user-id}}"
                 - name: repository-name
-                  value: "{{tasks.step-1-validate-input.outputs.parameters.repository-name}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.repository-name}}"
                 - name: git-revision
                   value: "{{workflow.parameters.git-revision}}"
                 - name: context-path
@@ -215,38 +168,49 @@ spec:
                 - name: requirements-lock-path
                   value: "{{workflow.parameters.requirements-lock-path}}"
                 - name: accelerator
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.accelerator}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.accelerator}}"
                 - name: architecture
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.architecture}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.architecture}}"
                 - name: gpu-model
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.gpu-model}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.gpu-model}}"
                 - name: gpu-architecture
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.gpu-architecture}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.gpu-architecture}}"
                 - name: cuda-version
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.cuda-version}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.cuda-version}}"
                 - name: minimum-driver-version
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.minimum-driver-version}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.minimum-driver-version}}"
                 - name: runtime-image
-                  value: "{{tasks.step-2-resolve-golden-image.outputs.parameters.runtime-image}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.runtime-image}}"
                 - name: lock-hash
-                  value: "{{tasks.step-4-create-6-layer-dockerfile.outputs.parameters.lock-hash}}"
+                  value: "{{tasks.prepare-build-context.outputs.parameters.lock-hash}}"
                 - name: image-reference
-                  value: "{{tasks.step-5-build-and-push-image.outputs.parameters.image-reference}}"
+                  value: "{{tasks.build-and-push-image.outputs.parameters.image-reference}}"
                 - name: image-digest
-                  value: "{{tasks.step-5-build-and-push-image.outputs.parameters.image-digest}}"
+                  value: "{{tasks.build-and-push-image.outputs.parameters.image-digest}}"
 
-    - name: validate-input
+          - name: notify-result
+            depends: write-result.Succeeded
+            template: notify-result
+            arguments:
+              parameters:
+                - name: notification-server-url
+                  value: "{{workflow.parameters.notification-server-url}}"
+
+    - name: prepare-build-context
       inputs:
         parameters:
           - name: image-type
+          - name: user-id
           - name: repository-url
           - name: git-revision
           - name: context-path
           - name: requirements-lock-path
+          - name: golden-image-uuid
           - name: image-name
           - name: shell-type
           - name: entrypoint-type
           - name: entrypoint-value
+          - name: entrypoint-args
           - name: working-directory
           - name: run-as-user
           - name: environment-profile
@@ -255,34 +219,6 @@ spec:
           - name: repository-name
             valueFrom:
               path: /tmp/repository-name.txt
-      script:
-        image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
-        command: [sh]
-        source: |
-          export REPOSITORY_URL="{{inputs.parameters.repository-url}}"
-          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
-          export GIT_REVISION="{{inputs.parameters.git-revision}}"
-          export CONTEXT_PATH="{{inputs.parameters.context-path}}"
-          export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
-          export IMAGE_NAME="{{inputs.parameters.image-name}}"
-          export SHELL_TYPE="{{inputs.parameters.shell-type}}"
-          export ENTRYPOINT_TYPE="{{inputs.parameters.entrypoint-type}}"
-          export ENTRYPOINT_VALUE="{{inputs.parameters.entrypoint-value}}"
-          export WORKING_DIRECTORY="{{inputs.parameters.working-directory}}"
-          export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
-          export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
-          python /opt/admin/scripts/validate_input.py
-        volumeMounts:
-          - name: admin-scripts
-            mountPath: /opt/admin/scripts
-            readOnly: true
-
-    - name: resolve-golden-image
-      inputs:
-        parameters:
-          - name: golden-image-uuid
-      outputs:
-        parameters:
           - name: runtime-image
             valueFrom:
               path: /tmp/runtime-image.txt
@@ -310,35 +246,47 @@ spec:
           - name: nvidia-driver-capabilities
             valueFrom:
               path: /tmp/nvidia-driver-capabilities.txt
+          - name: lock-hash
+            valueFrom:
+              path: /tmp/lock-hash.txt
       script:
         image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
         command: [sh]
         source: |
+          set -euo pipefail
+
+          export REPOSITORY_URL="{{inputs.parameters.repository-url}}"
+          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
+          export USER_ID="{{inputs.parameters.user-id}}"
+          export GIT_REVISION="{{inputs.parameters.git-revision}}"
+          export CONTEXT_PATH="{{inputs.parameters.context-path}}"
+          export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
+          export IMAGE_NAME="{{inputs.parameters.image-name}}"
+          export SHELL_TYPE="{{inputs.parameters.shell-type}}"
+          export ENTRYPOINT_TYPE="{{inputs.parameters.entrypoint-type}}"
+          export ENTRYPOINT_VALUE="{{inputs.parameters.entrypoint-value}}"
+          export ENTRYPOINT_ARGS="{{inputs.parameters.entrypoint-args}}"
+          export WORKING_DIRECTORY="{{inputs.parameters.working-directory}}"
+          export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
+          export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
+          python /opt/admin/scripts/validate_input.py
+
           export GOLDEN_IMAGE_UUID="{{inputs.parameters.golden-image-uuid}}"
           export CATALOG_PATH=/catalog/golden-image-catalog.json
           python /opt/admin/scripts/resolve_golden_image.py
-        volumeMounts:
-          - name: admin-scripts
-            mountPath: /opt/admin/scripts
-            readOnly: true
-          - name: golden-image-catalog
-            mountPath: /catalog
-            readOnly: true
 
-    - name: fetch-source
-      inputs:
-        parameters:
-          - name: repository-url
-          - name: git-revision
-      container:
-        image: alpine/git:2.49.1
-        command: [sh, -c]
-        args:
-          - |
-            export REPOSITORY_URL="{{inputs.parameters.repository-url}}"
-            export GIT_REVISION="{{inputs.parameters.git-revision}}"
-            export WORKSPACE_DIR=/workspace
-            sh /opt/admin/scripts/fetch_source.sh
+          export WORKSPACE_DIR=/workspace
+          sh /opt/admin/scripts/fetch_source.sh
+
+          export RUNTIME_IMAGE="$(cat /tmp/runtime-image.txt)"
+          export ACCELERATOR="$(cat /tmp/accelerator.txt)"
+          export ARCHITECTURE="$(cat /tmp/architecture.txt)"
+          export GPU_MODEL="$(cat /tmp/gpu-model.txt)"
+          export GPU_ARCHITECTURE="$(cat /tmp/gpu-architecture.txt)"
+          export CUDA_VERSION="$(cat /tmp/cuda-version.txt)"
+          export MINIMUM_DRIVER_VERSION="$(cat /tmp/minimum-driver-version.txt)"
+          export NVIDIA_DRIVER_CAPABILITIES="$(cat /tmp/nvidia-driver-capabilities.txt)"
+          sh /opt/admin/scripts/create_6_layer_dockerfile.sh
         volumeMounts:
           - name: admin-scripts
             mountPath: /opt/admin/scripts
@@ -348,64 +296,9 @@ spec:
           - name: bitbucket-ssh
             mountPath: /root/.ssh
             readOnly: true
-
-    - name: create-6-layer-dockerfile
-      inputs:
-        parameters:
-          - name: image-type
-          - name: runtime-image
-          - name: nexus-pypi-url
-          - name: context-path
-          - name: requirements-lock-path
-          - name: accelerator
-          - name: architecture
-          - name: gpu-model
-          - name: gpu-architecture
-          - name: cuda-version
-          - name: minimum-driver-version
-          - name: nvidia-driver-capabilities
-          - name: shell-type
-          - name: entrypoint-type
-          - name: entrypoint-value
-          - name: entrypoint-args
-          - name: working-directory
-          - name: run-as-user
-          - name: environment-profile
-      outputs:
-        parameters:
-          - name: lock-hash
-            valueFrom:
-              path: /tmp/lock-hash.txt
-      script:
-        image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
-        command: [sh]
-        source: |
-          export RUNTIME_IMAGE="{{inputs.parameters.runtime-image}}"
-          export IMAGE_TYPE="{{inputs.parameters.image-type}}"
-          export CONTEXT_PATH="{{inputs.parameters.context-path}}"
-          export REQUIREMENTS_LOCK_PATH="{{inputs.parameters.requirements-lock-path}}"
-          export ACCELERATOR="{{inputs.parameters.accelerator}}"
-          export ARCHITECTURE="{{inputs.parameters.architecture}}"
-          export GPU_MODEL="{{inputs.parameters.gpu-model}}"
-          export GPU_ARCHITECTURE="{{inputs.parameters.gpu-architecture}}"
-          export CUDA_VERSION="{{inputs.parameters.cuda-version}}"
-          export MINIMUM_DRIVER_VERSION="{{inputs.parameters.minimum-driver-version}}"
-          export NVIDIA_DRIVER_CAPABILITIES="{{inputs.parameters.nvidia-driver-capabilities}}"
-          export SHELL_TYPE="{{inputs.parameters.shell-type}}"
-          export ENTRYPOINT_TYPE="{{inputs.parameters.entrypoint-type}}"
-          export ENTRYPOINT_VALUE="{{inputs.parameters.entrypoint-value}}"
-          export ENTRYPOINT_ARGS="{{inputs.parameters.entrypoint-args}}"
-          export WORKING_DIRECTORY="{{inputs.parameters.working-directory}}"
-          export RUN_AS_USER="{{inputs.parameters.run-as-user}}"
-          export ENVIRONMENT_PROFILE="{{inputs.parameters.environment-profile}}"
-          export WORKSPACE_DIR=/workspace
-          sh /opt/admin/scripts/create_6_layer_dockerfile.sh
-        volumeMounts:
-          - name: admin-scripts
-            mountPath: /opt/admin/scripts
+          - name: golden-image-catalog
+            mountPath: /catalog
             readOnly: true
-          - name: workspace
-            mountPath: /workspace
 
     - name: build-and-push-image
       inputs:
@@ -417,6 +310,7 @@ spec:
           - name: registry-project
           - name: cache-registry-address
           - name: image-tag
+          - name: nexus-pypi-url
       outputs:
         parameters:
           - name: image-reference
@@ -429,6 +323,8 @@ spec:
         image: harbor.CHANGE_ME.internal/platform/buildkit-client-tools:1.0.0@sha256:CHANGE_ME
         command: [sh]
         source: |
+          set -euo pipefail
+
           export REPOSITORY_NAME="{{inputs.parameters.repository-name}}"
           export IMAGE_NAME="{{inputs.parameters.image-name}}"
           export BUILDKIT_ADDRESS="{{inputs.parameters.buildkit-address}}"
@@ -436,7 +332,7 @@ spec:
           export REGISTRY_PROJECT="{{inputs.parameters.registry-project}}"
           export CACHE_REGISTRY_ADDRESS="{{inputs.parameters.cache-registry-address}}"
           export IMAGE_TAG="{{inputs.parameters.image-tag}}"
-          export NEXUS_PYPI_URL="{{workflow.parameters.nexus-pypi-url}}"
+          export NEXUS_PYPI_URL="{{inputs.parameters.nexus-pypi-url}}"
           export WORKSPACE_DIR=/workspace
           sh /opt/admin/scripts/build_and_push_image.sh
         volumeMounts:
@@ -460,6 +356,7 @@ spec:
       inputs:
         parameters:
           - name: image-type
+          - name: user-id
           - name: repository-name
           - name: git-revision
           - name: context-path
@@ -482,10 +379,13 @@ spec:
         image: alpine:3.22
         command: [sh]
         source: |
+          set -euo pipefail
+
           export WORKFLOW_NAME="{{workflow.name}}"
           export WORKFLOW_UID="{{workflow.uid}}"
           export WORKFLOW_NAMESPACE="{{workflow.namespace}}"
           export IMAGE_TYPE="{{inputs.parameters.image-type}}"
+          export USER_ID="{{inputs.parameters.user-id}}"
           export REPOSITORY_NAME="{{inputs.parameters.repository-name}}"
           export GIT_REVISION="{{inputs.parameters.git-revision}}"
           export CONTEXT_PATH="{{inputs.parameters.context-path}}"
@@ -506,5 +406,33 @@ spec:
           - name: admin-scripts
             mountPath: /opt/admin/scripts
             readOnly: true
+          - name: workspace
+            mountPath: /workspace
+
+    - name: notify-result
+      inputs:
+        parameters:
+          - name: notification-server-url
+      script:
+        image: harbor.CHANGE_ME.internal/platform/build-tools:1.0.0@sha256:CHANGE_ME
+        command: [sh]
+        source: |
+          set -euo pipefail
+
+          NOTIFICATION_SERVER_URL="{{inputs.parameters.notification-server-url}}"
+          cat /workspace/output/build-report.json
+
+          if [ -z "${NOTIFICATION_SERVER_URL}" ]; then
+            echo "notification-server-url is empty. Skip notification."
+            exit 0
+          fi
+
+          curl -sS --fail \
+            --retry 3 \
+            --retry-delay 2 \
+            -H "Content-Type: application/json" \
+            --data-binary @/workspace/output/build-report.json \
+            "${NOTIFICATION_SERVER_URL}"
+        volumeMounts:
           - name: workspace
             mountPath: /workspace

@@ -10,6 +10,8 @@ spec:
     parameters:
       - name: image-type
         value: user
+      - name: user-id
+        value: user.CHANGE_ME
       - name: bitbucket-address-user-code
         value: ssh://git@bitbucket.CHANGE_ME/project/sample-app.git
       - name: git-revision
@@ -33,7 +35,7 @@ spec:
       - name: image-name
         value: sample-app-b300
       - name: image-tag
-        value: latest
+        value: 20260728-001
       - name: shell-type
         value: bash
       - name: entrypoint-type

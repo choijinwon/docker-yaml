@@ -38,8 +38,8 @@ manifests/golden-image-catalog.configmap.yaml
 - CPU/GPU Golden Image UUID와 Digest 매핑
 
 manifests/run-cpu.workflow.yaml
-manifests/run-b300.workflow.yaml
-- 사용자가 제출할 실행 예시
+manifests/run-gpu.workflow.yaml
+- 사용자가 제출할 GPU 실행 예시. B300뿐 아니라 Golden Image Catalog에 등록된 다른 GPU UUID도 사용 가능
 
 scripts/admin/
 - Golden/User Workflow Pod 안에서 실행되는 관리자 빌드 스크립트
@@ -63,7 +63,7 @@ golden-image-uuid = py311-cpu-ubuntu2204-20260727
 accelerator       = cpu
 ```
 
-B300 GPU 예시:
+GPU 예시:
 
 ```text
 golden-image-uuid      = py311-cuda128-b300-ubuntu2204-20260727
@@ -74,7 +74,16 @@ cuda-version           = 12.8
 minimum-driver-version = 570.26
 ```
 
-다른 GPU가 추가되면 User Workflow를 새로 만들지 않습니다. Golden Workflow로 GPU별 기준 이미지를 만들고 Catalog에 Golden Image Record를 추가한 뒤, 실행 manifest 또는 사용자 스크립트의 GPU 값을 바꾸면 됩니다.
+다른 GPU가 추가되면 User Workflow를 새로 만들지 않습니다. Golden Workflow로 GPU별 기준 이미지를 만들고 Catalog에 Golden Image Record를 추가한 뒤, 실행 manifest 또는 사용자 스크립트의 `golden-image-uuid`만 바꾸면 됩니다.
+
+```text
+GPU 추가 방식
+1. 운영자가 GPU별 Golden Image를 생성
+2. Harbor에 repository@sha256:digest로 Push
+3. Golden Image Catalog에 새 UUID 추가
+4. 사용자는 새 golden-image-uuid를 선택
+5. User Workflow는 동일하게 실행
+```
 
 ## 파라미터를 추가한 이유
 
@@ -84,7 +93,7 @@ minimum-driver-version = 570.26
 
 ```text
 무엇을 기준 이미지로 썼는지
-어떤 소스를 빌드했는지
+누가 요청했고 어떤 소스를 빌드했는지
 어떤 패키지 버전을 설치했는지
 CPU/GPU 중 어떤 실행 환경인지
 GPU라면 CUDA/Driver 호환 기준이 무엇인지
@@ -97,7 +106,7 @@ GPU라면 CUDA/Driver 호환 기준이 무엇인지
 | 목적 | 관련 파라미터 | 추가 이유 |
 | --- | --- | --- |
 | 기준 이미지 통제 | `golden_image_uuid`, `accelerator`, `gpu_model`, `cuda_version`, `minimum_driver_version` | 사용자가 임의 Base Image를 쓰지 않고 승인된 CPU/GPU 이미지만 쓰게 하기 위해 |
-| 재현성 보장 | `git_url`, `git_revision`, `requirements_lock_path`, `context_path` | 같은 소스와 같은 패키지 버전으로 다시 빌드할 수 있게 하기 위해 |
+| 요청자/재현성 보장 | `user_id`, `git_url`, `git_revision`, `requirements_lock_path`, `context_path` | 누가 요청했는지 남기고 같은 소스와 같은 패키지 버전으로 다시 빌드할 수 있게 하기 위해 |
 | 실행 방식 표준화 | `shell_type`, `entrypoint_type`, `entrypoint_value`, `entrypoint_args`, `working_directory`, `run_as_user` | 컨테이너 실행 명령을 Dockerfile 안에 명확히 남기고 Shell 실행을 제한하기 위해 |
 | 결과 추적 | `output_repository`, `output_tag`, `image_name`, `environment_profile` | Harbor에 올라간 이미지가 어느 서비스/환경/빌드 결과인지 추적하기 위해 |
 
@@ -198,9 +207,10 @@ Golden Image 6레이어:
 1. CPU/GPU Golden Image 생성
 2. Harbor에 repository@digest 형태로 Push
 3. golden-image-catalog.configmap.yaml에 UUID와 Digest 등록
-4. admin-scripts ConfigMap 배포
-5. golden-image-build WorkflowTemplate 등록
-6. user-image-build WorkflowTemplate 등록
+4. GPU가 추가되면 GPU별 Golden Image UUID를 Catalog에 추가
+5. admin-scripts ConfigMap 배포
+6. golden-image-build WorkflowTemplate 등록
+7. user-image-build WorkflowTemplate 등록
 ```
 
 ## 사용자 역할
@@ -209,6 +219,7 @@ Golden Image 6레이어:
 
 ```text
 Git Repository
+User ID
 Branch 또는 Commit
 Golden Image UUID
 requirements.lock 경로

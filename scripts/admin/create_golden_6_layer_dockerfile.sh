@@ -71,7 +71,7 @@ RUN if [ -n "\${APT_MIRROR_URL}" ]; then \
     apt-get install -y --no-install-recommends ${COMMON_OS_PACKAGES}; \
     rm -rf /var/lib/apt/lists/*
 
-# 3. Python Tool Layer: prepare pip tooling through the internal PyPI endpoint.
+# 3. Python Tool Layer: prepare pip tooling through the Nexus internal PyPI endpoint.
 ARG NEXUS_PYPI_URL
 RUN python3 -m pip install --index-url "\${NEXUS_PYPI_URL}" --upgrade pip setuptools wheel
 

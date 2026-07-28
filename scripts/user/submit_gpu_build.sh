@@ -1,8 +1,10 @@
 set -euo pipefail
 
-# Submit a CPU application image build.
+# Submit a GPU application image build.
 # Required: GIT_URL
-# Optional examples: GIT_REVISION, IMAGE_NAME, IMAGE_TAG, ENTRYPOINT_VALUE
+# GPU type is selected by GOLDEN_IMAGE_UUID, not by editing the WorkflowTemplate.
+# Example:
+#   GOLDEN_IMAGE_UUID=py311-cuda128-b300-ubuntu2204-20260727 GPU_PROFILE=b300 ./scripts/user/submit_gpu_build.sh
 
 NAMESPACE="${NAMESPACE:-argo}"
 DRY_RUN="${DRY_RUN:-false}"
@@ -10,16 +12,24 @@ DRY_RUN="${DRY_RUN:-false}"
 : "${GIT_URL:?Set GIT_URL, for example ssh://git@bitbucket.local/project/app.git}"
 : "${USER_ID:?Set USER_ID, for example jiwon.choi}"
 
+GPU_PROFILE="${GPU_PROFILE:-gpu}"
+case "${GPU_PROFILE}" in
+  *[!a-zA-Z0-9-]* | "")
+    echo "GPU_PROFILE must use only letters, numbers, and hyphen." >&2
+    exit 1
+    ;;
+esac
+
 GIT_REVISION="${GIT_REVISION:-main}"
 CONTEXT_PATH="${CONTEXT_PATH:-.}"
 REQUIREMENTS_LOCK_PATH="${REQUIREMENTS_LOCK_PATH:-requirements.lock}"
-GOLDEN_IMAGE_UUID="${GOLDEN_IMAGE_UUID:-py311-cpu-ubuntu2204-20260727}"
+GOLDEN_IMAGE_UUID="${GOLDEN_IMAGE_UUID:-py311-cuda128-b300-ubuntu2204-20260727}"
 NEXUS_PYPI_URL="${NEXUS_PYPI_URL:-https://nexus.CHANGE_ME.internal/repository/pypi-group/simple}"
 REGISTRY_ADDRESS="${REGISTRY_ADDRESS:-harbor.CHANGE_ME.internal}"
 REGISTRY_PROJECT="${REGISTRY_PROJECT:-applications}"
 CACHE_REGISTRY_ADDRESS="${CACHE_REGISTRY_ADDRESS:-harbor.CHANGE_ME.internal/build-cache}"
 BUILDKIT_ADDRESS="${BUILDKIT_ADDRESS:-tcp://buildkitd.buildkit.svc.cluster.local:1234}"
-IMAGE_NAME="${IMAGE_NAME:-sample-app-cpu}"
+IMAGE_NAME="${IMAGE_NAME:-sample-app-${GPU_PROFILE}}"
 IMAGE_TAG="${IMAGE_TAG:-20260728-001}"
 SHELL_TYPE="${SHELL_TYPE:-bash}"
 ENTRYPOINT_TYPE="${ENTRYPOINT_TYPE:-module}"
@@ -28,6 +38,7 @@ ENTRYPOINT_ARGS="${ENTRYPOINT_ARGS:-}"
 WORKING_DIRECTORY="${WORKING_DIRECTORY:-/app}"
 RUN_AS_USER="${RUN_AS_USER:-10001}"
 ENVIRONMENT_PROFILE="${ENVIRONMENT_PROFILE:-production}"
+NOTIFICATION_SERVER_URL="${NOTIFICATION_SERVER_URL:-}"
 
 tmp_file=$(mktemp)
 trap 'rm -f "${tmp_file}"' EXIT
@@ -36,7 +47,7 @@ cat > "${tmp_file}" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: image-build-cpu-
+  generateName: image-build-${GPU_PROFILE}-
   namespace: ${NAMESPACE}
 spec:
   workflowTemplateRef:
@@ -85,6 +96,8 @@ spec:
         value: "${RUN_AS_USER}"
       - name: environment-profile
         value: ${ENVIRONMENT_PROFILE}
+      - name: notification-server-url
+        value: "${NOTIFICATION_SERVER_URL}"
 EOF
 
 if [ "${DRY_RUN}" = "true" ]; then

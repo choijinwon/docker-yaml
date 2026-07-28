@@ -6,6 +6,7 @@ set -euo pipefail
 
 : "${REPOSITORY_NAME:?REPOSITORY_NAME is required}"
 : "${IMAGE_TYPE:?IMAGE_TYPE is required}"
+: "${USER_ID:?USER_ID is required}"
 : "${GIT_REVISION:?GIT_REVISION is required}"
 : "${CONTEXT_PATH:?CONTEXT_PATH is required}"
 : "${REQUIREMENTS_LOCK_PATH:?REQUIREMENTS_LOCK_PATH is required}"
@@ -26,6 +27,7 @@ cat > "${OUTPUT_DIR}/build-report.json" <<EOF
   "workflowUid": "${WORKFLOW_UID:-}",
   "namespace": "${WORKFLOW_NAMESPACE:-}",
   "imageType": "${IMAGE_TYPE}",
+  "userId": "${USER_ID}",
   "repositoryName": "${REPOSITORY_NAME}",
   "gitRevision": "${GIT_REVISION}",
   "contextPath": "${CONTEXT_PATH}",

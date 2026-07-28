@@ -22,6 +22,7 @@ def env(name: str) -> str:
 
 repository_url = env("REPOSITORY_URL")
 image_type = env("IMAGE_TYPE") or "user"
+user_id = env("USER_ID")
 git_revision = env("GIT_REVISION")
 context_path = env("CONTEXT_PATH")
 requirements_lock_path = env("REQUIREMENTS_LOCK_PATH")
@@ -36,6 +37,9 @@ environment_profile = env("ENVIRONMENT_PROFILE")
 # Required source input. Without this, the workflow has nothing to clone.
 if image_type != "user":
     fail("user image workflow requires image-type=user")
+
+if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._@-]{1,63}", user_id or ""):
+    fail("user-id is required and must use only letters, numbers, dot, underscore, hyphen, or @")
 
 if not repository_url:
     fail("Repository URL is empty")

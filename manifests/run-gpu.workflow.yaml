@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: image-build-cpu-
+  generateName: image-build-gpu-
   namespace: argo
 spec:
   workflowTemplateRef:
@@ -21,7 +21,7 @@ spec:
       - name: requirements-lock-path
         value: requirements.lock
       - name: golden-image-uuid
-        value: py311-cpu-ubuntu2204-20260727
+        value: py311-cuda128-b300-ubuntu2204-20260727
       - name: nexus-pypi-url
         value: https://nexus.CHANGE_ME.internal/repository/pypi-group/simple
       - name: registry-address
@@ -33,7 +33,7 @@ spec:
       - name: buildkit-address
         value: tcp://buildkitd.buildkit.svc.cluster.local:1234
       - name: image-name
-        value: sample-app-cpu
+        value: sample-app-gpu
       - name: image-tag
         value: 20260728-001
       - name: shell-type
